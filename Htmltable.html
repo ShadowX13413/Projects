@@ -1,0 +1,105 @@
+<html>
+
+<head>
+    <title> Creating a table</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background-image: url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&h=800&fit=crop');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-color: #1a1a1a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+
+        table {
+            border-collapse: collapse;
+            border-color: purple;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            box-shadow: 5px 5px 32px rgba(0, 0, 0, 0.823);
+            margin: 20px auto;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        table tr {
+            transition: background-color 0.3s ease;
+        }
+
+        table tr:hover {
+            background-color: rgba(200, 150, 255, 0.2);
+        }
+
+        table td {
+            padding: 12px 15px;
+            border: 2px solid purple;
+            text-align: center;
+            font-weight: 500;
+            color: #333;
+        }
+
+        table tr:first-child td {
+            background-color: #9370DB;
+            color: rgb(237, 230, 237);
+            font-weight: bold;
+        }
+
+        .school-title {
+            display: block;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #9370DB;
+            text-align: center;
+            margin: 10px 0;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="school-title">Tree House High School</div>
+    <h1>Timetable</h1>
+    <table border="3">
+        <tr>
+            <td>Monday</td>
+            <td>Tuesday</td>
+            <td>Wednesday</td>
+            <td>Thursday</td>
+            <td>Friday</td>
+            <td>Saturday</td>
+        </tr>
+        <tr>
+            <td>Maths</td>
+            <td>Science</td>
+            <td>Computer</td>
+            <td>English</td>
+            <td>Hindi</td>
+            <td>English</td>
+        </tr>
+        <tr>
+            <td>Library</td>
+            <td>Science</td>
+            <td>Maths</td>
+            <td>English</td>
+            <td>Maths</td>
+            <td>Hindi</td>
+        </tr>
+    </table>
+    <form>
+        <label>Your Name:</label>
+        <input>
+    </form>
+</body>
+
+</html>

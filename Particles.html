@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Particle Sandbox V2</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #050505;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        /* HUD Styling */
+        #hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 280px;
+            background: rgba(10, 10, 10, 0.85);
+            color: #eee;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 255, 204, 0.2);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: opacity 0.3s;
+        }
+
+        h1 {
+            margin: 0 0 15px 0;
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #00ffcc;
+            border-bottom: 1px solid rgba(0, 255, 204, 0.3);
+            padding-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+
+        .stat-val { color: #fff; font-family: monospace; }
+
+        .control-group {
+            margin-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 15px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.75rem;
+            color: #00ffcc;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            background: transparent;
+            -webkit-appearance: none;
+            margin-bottom: 15px;
+        }
+        
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 14px;
+            width: 14px;
+            border-radius: 50%;
+            background: #00ffcc;
+            margin-top: -5px;
+            cursor: pointer;
+            box-shadow: 0 0 10px #00ffcc;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        button {
+            flex: 1;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            padding: 8px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:hover { background: rgba(0, 255, 204, 0.1); border-color: #00ffcc; }
+        button.active { background: #00ffcc; color: #000; font-weight: bold; box-shadow: 0 0 15px rgba(0,255,204,0.4); }
+
+        .guide {
+            margin-top: 20px;
+            font-size: 0.7rem;
+            color: #666;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="hud">
+        <h1>System Core <span style="font-size:0.7em; opacity:0.5">v2.0</span></h1>
+        
+        <div class="stat-row">
+            <span>Particles</span>
+            <span class="stat-val" id="count-display">0</span>
+        </div>
+        <div class="stat-row">
+            <span>FPS</span>
+            <span class="stat-val" id="fps-display">60</span>
+        </div>
+
+        <div class="control-group">
+            <label>Connection Range (Neural Density)</label>
+            <input type="range" id="connect-dist" min="0" max="150" value="0">
+            
+            <label>Physics Speed</label>
+            <input type="range" id="speed-mult" min="0.1" max="3" step="0.1" value="1">
+        </div>
+
+        <div class="control-group">
+            <label>Simulation Mode</label>
+            <div class="btn-group">
+                <button onclick="setMode('neural')" id="btn-neural">Neural</button>
+                <button onclick="setMode('swarm')" id="btn-swarm" class="active">Swarm</button>
+                <button onclick="setMode('chaos')" id="btn-chaos">Chaos</button>
+            </div>
+        </div>
+
+        <div class="guide">
+            [L-Click] Gravity Well<br>
+            [R-Click] Repulsion Field<br>
+            [Double-Click] Shockwave
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <script>
+        /**
+         * ENGINE V2: Spatial Hash Optimization
+         * To allow connections without O(N^2) complexity, we use a grid system.
+         */
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', { alpha: false }); // Optimize for no transparency on canvas itself
+        
+        // UI Elements
+        const uiCount = document.getElementById('count-display');
+        const uiFps = document.getElementById('fps-display');
+        const inputDist = document.getElementById('connect-dist');
+        const inputSpeed = document.getElementById('speed-mult');
+        const btns = {
+            neural: document.getElementById('btn-neural'),
+            swarm: document.getElementById('btn-swarm'),
+            chaos: document.getElementById('btn-chaos')
+        };
+
+        // State
+        let width, height;
+        let particles = [];
+        let mouse = { x: -1000, y: -1000, active: false, type: 'attract' };
+        
+        // Settings
+        const config = {
+            count: 1800,
+            baseSpeed: 1.5,
+            friction: 0.96,
+            connectDist: 0, // Controlled by slider
+            speedMult: 1,   // Controlled by slider
+            mode: 'swarm'   // swarm, neural, chaos
+        };
+
+        // FPS Calculation
+        let lastTime = 0;
+        let frameCount = 0;
+        let fpsTimer = 0;
+
+        // --- GRID SYSTEM FOR OPTIMIZATION ---
+        // Divides screen into cells. Particles only check neighbors.
+        const GRID_SIZE = 100;
+        let grid = {};
+
+        function clearGrid() {
+            grid = {};
+        }
+
+        function addToGrid(p) {
+            // Bitwise floor for minor speedup
+            const col = (p.x / GRID_SIZE) | 0;
+            const row = (p.y / GRID_SIZE) | 0;
+            const key = `${col},${row}`;
+            if (!grid[key]) grid[key] = [];
+            grid[key].push(p);
+        }
+
+        function getNearbyParticles(p) {
+            const col = (p.x / GRID_SIZE) | 0;
+            const row = (p.y / GRID_SIZE) | 0;
+            let nearby = [];
+
+            // Check 3x3 grid around the particle
+            for (let i = -1; i <= 1; i++) {
+                for (let j = -1; j <= 1; j++) {
+                    const key = `${col + i},${row + j}`;
+                    if (grid[key]) {
+                        nearby = nearby.concat(grid[key]);
+                    }
+                }
+            }
+            return nearby;
+        }
+
+        // --- PARTICLE CLASS ---
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * config.baseSpeed;
+                this.vy = (Math.random() - 0.5) * config.baseSpeed;
+                this.size = Math.random() * 2 + 1;
+                this.hue = Math.random() * 60 + 160; // Cyan/Blue base
+                this.baseHue = this.hue;
+            }
+
+            update() {
+                // Physics
+                this.x += this.vx * config.speedMult;
+                this.y += this.vy * config.speedMult;
+
+                this.vx *= config.friction;
+                this.vy *= config.friction;
+
+                // Mouse Interaction
+                if (mouse.active) {
+                    const dx = mouse.x - this.x;
+                    const dy = mouse.y - this.y;
+                    const distSq = dx * dx + dy * dy;
+                    
+                    if (distSq < 160000) { // 400px radius
+                        const force = (400 - Math.sqrt(distSq)) / 400;
+                        const angle = Math.atan2(dy, dx);
+                        const dir = mouse.type === 'attract' ? 1 : -4; // Repel is stronger
+                        
+                        const push = force * 0.5 * dir;
+                        
+                        this.vx += Math.cos(angle) * push;
+                        this.vy += Math.sin(angle) * push;
+                        
+                        // Excite color on interaction
+                        this.hue = this.baseHue + 100;
+                    }
+                }
+
+                // Color Decay
+                if (this.hue > this.baseHue) this.hue -= 2;
+
+                // Mode Specific Behavior
+                if (config.mode === 'chaos') {
+                     this.vx += (Math.random() - 0.5) * 0.2;
+                     this.vy += (Math.random() - 0.5) * 0.2;
+                }
+
+                // Bounds Wrapping
+                if (this.x < 0) this.x = width;
+                if (this.x > width) this.x = 0;
+                if (this.y < 0) this.y = height;
+                if (this.y > height) this.y = 0;
+            }
+
+            draw() {
+                ctx.fillStyle = `hsl(${this.hue}, 100%, 60%)`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // --- CORE FUNCTIONS ---
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        function init() {
+            resize();
+            particles = [];
+            for (let i = 0; i < config.count; i++) {
+                particles.push(new Particle());
+            }
+            uiCount.innerText = config.count.toLocaleString();
+        }
+
+        function drawConnections() {
+            if (config.connectDist <= 0) return;
+
+            const thresholdSq = config.connectDist * config.connectDist;
+            ctx.lineWidth = 0.5;
+
+            // Only loop through particles, find their neighbors via grid
+            // This is strictly faster than nested loop
+            particles.forEach(p => {
+                const neighbors = getNearbyParticles(p);
+                neighbors.forEach(n => {
+                    // Avoid double drawing and self-linking
+                    if (p === n) return;
+                    
+                    const dx = p.x - n.x;
+                    const dy = p.y - n.y;
+                    const distSq = dx * dx + dy * dy;
+
+                    if (distSq < thresholdSq) {
+                        const alpha = 1 - (distSq / thresholdSq);
+                        ctx.strokeStyle = `rgba(0, 255, 204, ${alpha * 0.4})`; // Low alpha for performance feel
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(n.x, n.y);
+                        ctx.stroke();
+                    }
+                });
+            });
+        }
+
+        function animate(time) {
+            // FPS Meter
+            if (time - lastTime >= 1000) {
+                uiFps.innerText = frameCount;
+                frameCount = 0;
+                lastTime = time;
+            }
+            frameCount++;
+
+            // Clear Screen
+            ctx.fillStyle = 'rgba(5, 5, 5, 0.3)'; // Trail effect
+            ctx.fillRect(0, 0, width, height);
+
+            // Rebuild Grid
+            clearGrid();
+            particles.forEach(p => {
+                p.update();
+                addToGrid(p);
+            });
+
+            // Draw Connections (Behind particles)
+            // Only enabling specific composite op for glow if needed, else normal for performance
+            ctx.globalCompositeOperation = 'lighter';
+            drawConnections();
+            
+            // Draw Particles
+            particles.forEach(p => p.draw());
+            
+            ctx.globalCompositeOperation = 'source-over';
+
+            requestAnimationFrame(animate);
+        }
+
+        // --- INPUT HANDLING ---
+
+        window.addEventListener('resize', () => {
+            resize();
+            init(); // Re-init on resize to prevent stretching issues
+        });
+
+        // Mouse Move
+        window.addEventListener('mousemove', e => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+            mouse.active = true;
+        });
+
+        // Mouse Down (Left vs Right)
+        window.addEventListener('mousedown', e => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return; // Ignore clicks on UI
+            
+            if (e.button === 0) { // Left Click
+                mouse.type = 'attract';
+                // Time dilation on left hold?
+                // Kept physics simple for V2, focusing on field types
+            } else if (e.button === 2) { // Right Click
+                mouse.type = 'repel';
+            }
+            mouse.active = true;
+        });
+
+        window.addEventListener('mouseup', () => {
+            mouse.active = false;
+        });
+
+        window.addEventListener('contextmenu', e => e.preventDefault()); // Block context menu for Right Click
+
+        window.addEventListener('dblclick', () => {
+            // Explosive shockwave
+            particles.forEach(p => {
+                const dx = p.x - mouse.x;
+                const dy = p.y - mouse.y;
+                const force = 30; 
+                const angle = Math.atan2(dy, dx);
+                p.vx += Math.cos(angle) * force;
+                p.vy += Math.sin(angle) * force;
+                p.hue = 50; // Flash yellow
+            });
+        });
+
+        // --- UI BINDINGS ---
+        
+        inputDist.addEventListener('input', e => config.connectDist = parseInt(e.target.value));
+        inputSpeed.addEventListener('input', e => config.speedMult = parseFloat(e.target.value));
+
+        window.setMode = function(mode) {
+            config.mode = mode;
+            
+            // Reset button styles
+            Object.values(btns).forEach(b => b.classList.remove('active'));
+            btns[mode].classList.add('active');
+
+            // Apply Presets
+            if (mode === 'neural') {
+                config.connectDist = 100;
+                inputDist.value = 100;
+                config.speedMult = 0.5;
+                inputSpeed.value = 0.5;
+                config.friction = 0.90; // Higher drag for structure
+            } else if (mode === 'swarm') {
+                config.connectDist = 0;
+                inputDist.value = 0;
+                config.speedMult = 1.2;
+                inputSpeed.value = 1.2;
+                config.friction = 0.96;
+            } else if (mode === 'chaos') {
+                config.connectDist = 40;
+                inputDist.value = 40;
+                config.speedMult = 2.0;
+                inputSpeed.value = 2.0;
+                config.friction = 0.98; // Slippery
+            }
+        }
+
+        // Ignite
+        init();
+        requestAnimationFrame(animate);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Network 101: Interactive Sandbox</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        nn: {
+                            bg: '#0F172A',
+                            panel: '#1E293B',
+                            border: '#334155',
+                            accent: '#38BDF8',
+                            node: '#475569',
+                            nodeActive: '#3B82F6',
+                            text: '#F8FAFC',
+                            muted: '#94A3B8'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0F172A;
+            color: #F8FAFC;
+        }
+        
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, 0.8);
+            border-radius: 1rem;
+        }
+
+        .neuron {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: #475569;
+            border: 2px solid #64748B;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            font-weight: bold;
+            position: relative;
+            z-index: 10;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .neuron.active {
+            background-color: #38BDF8;
+            border-color: #BAE6FD;
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.6);
+            transform: scale(1.1);
+        }
+
+        svg.connections {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        line.synapse {
+            stroke: #475569;
+            stroke-width: 2;
+            transition: all 0.3s ease;
+        }
+
+        line.synapse.active {
+            stroke: #38BDF8;
+            stroke-width: 4;
+            filter: drop-shadow(0 0 4px rgba(56, 189, 248, 0.8));
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0F172A; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col p-4 md:p-8 gap-6 antialiased selection:bg-nn-accent selection:text-nn-bg">
+
+    <header class="glass-panel p-6 flex items-center gap-4">
+        <div class="w-12 h-12 rounded-full bg-nn-border flex items-center justify-center border border-nn-accent">
+            <i class="ph ph-brain text-2xl text-nn-accent"></i>
+        </div>
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight">How Neural Networks Work</h1>
+            <p class="text-sm text-nn-muted mt-1">Interactive Sandbox: Watch the math happen in real-time.</p>
+        </div>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
+        
+        <!-- Interactive Network Visualization -->
+        <div class="lg:col-span-7 glass-panel p-6 flex flex-col relative min-h-[500px]">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-lg font-semibold flex items-center gap-2">
+                    <i class="ph ph-activity text-nn-accent"></i> The Network
+                </h2>
+                <button id="run-btn" class="px-4 py-2 bg-nn-accent text-nn-bg font-bold rounded-lg hover:bg-blue-400 transition-colors flex items-center gap-2">
+                    <i class="ph ph-play-fill"></i> Run Forward Pass
+                </button>
+            </div>
+
+            <!-- Network Canvas -->
+            <div class="flex-1 relative flex justify-between items-center px-4 md:px-12" id="network-container">
+                <svg class="connections" id="synapses"></svg>
+
+                <!-- Input Layer -->
+                <div class="flex flex-col gap-12 z-10" id="layer-input">
+                    <div class="text-center mb-2">
+                        <span class="text-xs font-mono text-nn-muted uppercase tracking-wider">Inputs</span>
+                    </div>
+                    <div class="flex flex-col items-center gap-2">
+                        <input type="range" id="in-1" min="0" max="1" step="0.1" value="0.5" class="w-20 accent-nn-accent cursor-pointer">
+                        <div class="neuron" id="n-i1">0.5</div>
+                    </div>
+                    <div class="flex flex-col items-center gap-2">
+                        <input type="range" id="in-2" min="0" max="1" step="0.1" value="0.8" class="w-20 accent-nn-accent cursor-pointer">
+                        <div class="neuron" id="n-i2">0.8</div>
+                    </div>
+                </div>
+
+                <!-- Hidden Layer -->
+                <div class="flex flex-col gap-8 z-10" id="layer-hidden">
+                    <div class="text-center mb-2">
+                        <span class="text-xs font-mono text-nn-muted uppercase tracking-wider">Hidden Layer</span>
+                    </div>
+                    <div class="neuron" id="n-h1" title="Neuron 1">0</div>
+                    <div class="neuron" id="n-h2" title="Neuron 2">0</div>
+                    <div class="neuron" id="n-h3" title="Neuron 3">0</div>
+                </div>
+
+                <!-- Output Layer -->
+                <div class="flex flex-col gap-12 z-10" id="layer-output">
+                    <div class="text-center mb-2">
+                        <span class="text-xs font-mono text-nn-muted uppercase tracking-wider">Output</span>
+                    </div>
+                    <div class="flex flex-col items-center gap-2">
+                        <div class="neuron !w-20 !h-20 text-lg border-nn-accent" id="n-o1">0</div>
+                        <span class="text-xs font-mono text-nn-accent" id="final-result">Result</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-4 p-4 bg-nn-bg/50 rounded-lg border border-nn-border font-mono text-sm">
+                <span class="text-nn-muted">Current Operation:</span> 
+                <span id="math-display" class="text-white ml-2">Adjust inputs and press Run.</span>
+            </div>
+        </div>
+
+        <!-- Explanation Panel -->
+        <div class="lg:col-span-5 glass-panel p-6 overflow-y-auto">
+            <h2 class="text-xl font-bold mb-4 border-b border-nn-border pb-2">The Building Blocks</h2>
+            
+            <div class="space-y-6 text-sm text-gray-300">
+                <div class="bg-nn-bg/50 p-4 rounded-lg border border-nn-border">
+                    <h3 class="text-white font-semibold flex items-center gap-2 mb-2">
+                        <span class="w-3 h-3 rounded-full bg-slate-500 inline-block"></span> 
+                        1. Neurons (Nodes)
+                    </h3>
+                    <p>Think of a neuron as a simple container that holds a number. In our model, they hold numbers between 0 and 1. The input neurons get their numbers from the real world (your sliders). The other neurons calculate their numbers based on the ones before them.</p>
+                </div>
+
+                <div class="bg-nn-bg/50 p-4 rounded-lg border border-nn-border">
+                    <h3 class="text-white font-semibold flex items-center gap-2 mb-2">
+                        <i class="ph ph-arrows-left-right text-nn-accent"></i>
+                        2. Weights (The Connections)
+                    </h3>
+                    <p>When data flows from one neuron to another, it travels across a connection called a <strong>Weight</strong>. A weight is just a multiplier. If a connection has a high weight, it means "pay a lot of attention to this data." If it's low or negative, it means "ignore this data."</p>
+                    <p class="font-mono text-xs mt-2 text-nn-accent bg-black/30 p-2 rounded">New Value = Input × Weight</p>
+                </div>
+
+                <div class="bg-nn-bg/50 p-4 rounded-lg border border-nn-border">
+                    <h3 class="text-white font-semibold flex items-center gap-2 mb-2">
+                        <i class="ph ph-plus-minus text-green-400"></i>
+                        3. Bias
+                    </h3>
+                    <p>Sometimes you want a neuron to activate even if the input is zero, or stay off even if the input is slightly positive. A <strong>Bias</strong> is a constant number added to the result to shift it up or down.</p>
+                    <p class="font-mono text-xs mt-2 text-nn-accent bg-black/30 p-2 rounded">Value = (Input × Weight) + Bias</p>
+                </div>
+
+                <div class="bg-nn-bg/50 p-4 rounded-lg border border-nn-border">
+                    <h3 class="text-white font-semibold flex items-center gap-2 mb-2">
+                        <i class="ph ph-wave-sine text-purple-400"></i>
+                        4. Activation Function (ReLU)
+                    </h3>
+                    <p>If we just multiplied and added numbers, a neural network would just be a basic linear calculator. To understand complex things, we squish the final number using a math rule. In this demo, we use <strong>ReLU</strong> (Rectified Linear Unit), which simply says: <br><em>"If the number is negative, make it 0. Otherwise, leave it alone."</em></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const runBtn = document.getElementById('run-btn');
+        const in1Slider = document.getElementById('in-1');
+        const in2Slider = document.getElementById('in-2');
+        const mathDisplay = document.getElementById('math-display');
+        
+        // Neurons
+        const n_i1 = document.getElementById('n-i1');
+        const n_i2 = document.getElementById('n-i2');
+        const n_h1 = document.getElementById('n-h1');
+        const n_h2 = document.getElementById('n-h2');
+        const n_h3 = document.getElementById('n-h3');
+        const n_o1 = document.getElementById('n-o1');
+
+        // Neural Network Data (Hardcoded weights and biases for demo)
+        const network = {
+            hiddenWeights: [
+                [0.8, -0.2], // Weights to h1 from i1, i2
+                [0.4, 0.9],  // Weights to h2 from i1, i2
+                [-0.5, 0.5]  // Weights to h3 from i1, i2
+            ],
+            hiddenBiases: [0.1, -0.2, 0.05],
+            outputWeights: [0.6, 0.8, -0.4], // Weights to o1 from h1, h2, h3
+            outputBias: -0.1
+        };
+
+        // Update input neuron display when slider moves
+        in1Slider.addEventListener('input', (e) => n_i1.innerText = e.target.value);
+        in2Slider.addEventListener('input', (e) => n_i2.innerText = e.target.value);
+
+        // Simple ReLU Activation Function
+        function relu(x) {
+            return Math.max(0, x);
+        }
+
+        // Helper to format math display
+        function formatMath(val) {
+            return parseFloat(val).toFixed(2);
+        }
+
+        // Draw connections (SVG lines)
+        function drawConnections() {
+            const svg = document.getElementById('synapses');
+            svg.innerHTML = ''; // Clear existing
+
+            const container = document.getElementById('network-container').getBoundingClientRect();
+            
+            function connect(el1, el2, id) {
+                const rect1 = el1.getBoundingClientRect();
+                const rect2 = el2.getBoundingClientRect();
+
+                // Calculate center points relative to container
+                const x1 = (rect1.left + rect1.width / 2) - container.left;
+                const y1 = (rect1.top + rect1.height / 2) - container.top;
+                const x2 = (rect2.left + rect2.width / 2) - container.left;
+                const y2 = (rect2.top + rect2.height / 2) - container.top;
+
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', x1);
+                line.setAttribute('y1', y1);
+                line.setAttribute('x2', x2);
+                line.setAttribute('y2', y2);
+                line.setAttribute('class', 'synapse');
+                line.setAttribute('id', id);
+                svg.appendChild(line);
+            }
+
+            // Draw Input to Hidden
+            connect(n_i1, n_h1, 'line-i1-h1');
+            connect(n_i1, n_h2, 'line-i1-h2');
+            connect(n_i1, n_h3, 'line-i1-h3');
+            connect(n_i2, n_h1, 'line-i2-h1');
+            connect(n_i2, n_h2, 'line-i2-h2');
+            connect(n_i2, n_h3, 'line-i2-h3');
+
+            // Draw Hidden to Output
+            connect(n_h1, n_o1, 'line-h1-o1');
+            connect(n_h2, n_o1, 'line-h2-o1');
+            connect(n_h3, n_o1, 'line-h3-o1');
+        }
+
+        // Redraw on resize
+        window.addEventListener('resize', drawConnections);
+        
+        // Wait for DOM layout to settle before initial draw
+        setTimeout(drawConnections, 100);
+
+        // Sleep helper for animation pauses
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+        async function runForwardPass() {
+            // Disable button during run
+            runBtn.disabled = true;
+            runBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            // Reset visual states
+            document.querySelectorAll('.neuron').forEach(n => n.classList.remove('active'));
+            document.querySelectorAll('.synapse').forEach(l => l.classList.remove('active'));
+            
+            const i1 = parseFloat(in1Slider.value);
+            const i2 = parseFloat(in2Slider.value);
+
+            // Step 1: Activate Inputs
+            mathDisplay.innerHTML = `Reading inputs: <span class="text-nn-accent">[${i1}, ${i2}]</span>`;
+            n_i1.classList.add('active');
+            n_i2.classList.add('active');
+            await sleep(800);
+
+            // Step 2: Hidden Layer Calculations
+            let hVals = [0, 0, 0];
+            const hiddenNeurons = [n_h1, n_h2, n_h3];
+            
+            for(let i=0; i<3; i++) {
+                // Highlight lines coming to this hidden neuron
+                document.getElementById(`line-i1-h${i+1}`).classList.add('active');
+                document.getElementById(`line-i2-h${i+1}`).classList.add('active');
+                
+                // The Math: (i1 * w1) + (i2 * w2) + bias
+                let w1 = network.hiddenWeights[i][0];
+                let w2 = network.hiddenWeights[i][1];
+                let b = network.hiddenBiases[i];
+                
+                let rawSum = (i1 * w1) + (i2 * w2) + b;
+                let activated = relu(rawSum); // Apply ReLU
+                hVals[i] = activated;
+
+                mathDisplay.innerHTML = `Hidden Node ${i+1} Math: <br> 
+                    <span class="text-nn-muted">(Input1: ${i1} × W:${w1}) + (Input2: ${i2} × W:${w2}) + Bias:${b}</span> <br>
+                    = ${formatMath(rawSum)} ➔ <strong>ReLU Act: ${formatMath(activated)}</strong>`;
+                
+                hiddenNeurons[i].innerText = formatMath(activated);
+                hiddenNeurons[i].classList.add('active');
+                
+                await sleep(1500);
+                
+                // Un-highlight lines
+                document.getElementById(`line-i1-h${i+1}`).classList.remove('active');
+                document.getElementById(`line-i2-h${i+1}`).classList.remove('active');
+            }
+
+            // Step 3: Output Layer Calculation
+            n_i1.classList.remove('active');
+            n_i2.classList.remove('active');
+            
+            document.getElementById('line-h1-o1').classList.add('active');
+            document.getElementById('line-h2-o1').classList.add('active');
+            document.getElementById('line-h3-o1').classList.add('active');
+
+            let rawOutput = (hVals[0] * network.outputWeights[0]) + 
+                            (hVals[1] * network.outputWeights[1]) + 
+                            (hVals[2] * network.outputWeights[2]) + 
+                            network.outputBias;
+            
+            let finalOutput = relu(rawOutput);
+            
+            mathDisplay.innerHTML = `Final Output Math: <br>
+                <span class="text-nn-muted">Sum of (Hidden Node × Weight) + Final Bias</span> <br>
+                = ${formatMath(rawOutput)} ➔ <strong>ReLU Act: <span class="text-green-400">${formatMath(finalOutput)}</span></strong>`;
+            
+            n_o1.innerText = formatMath(finalOutput);
+            n_o1.classList.add('active');
+            
+            await sleep(1500);
+            document.getElementById('line-h1-o1').classList.remove('active');
+            document.getElementById('line-h2-o1').classList.remove('active');
+            document.getElementById('line-h3-o1').classList.remove('active');
+            
+            hiddenNeurons.forEach(n => n.classList.remove('active'));
+
+            runBtn.disabled = false;
+            runBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            mathDisplay.innerHTML = "Forward pass complete. Ready for new inputs.";
+        }
+
+        runBtn.addEventListener('click', runForwardPass);
+
+    </script>
+</body>
+</html>
