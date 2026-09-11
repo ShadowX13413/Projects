@@ -1,0 +1,5 @@
+ollama
+pyttsx3
+psutil
+flask
+flask-cors

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>J.A.R.V.I.S. — Local UI</title>
+  <style>
+    body{font-family:Segoe UI,Roboto,Arial;margin:0;background:#0b0f1a;color:#e6eef8}
+    .app{max-width:800px;margin:32px auto;padding:20px;background:#0f1724;border-radius:8px}
+    h1{margin:0 0 12px;font-size:20px}
+    #log{height:480px;overflow:auto;padding:12px;background:#071024;border-radius:6px}
+    .msg{margin:8px 0;padding:8px;border-radius:6px}
+    .user{background:#12263b;color:#cfe8ff;text-align:right}
+    .bot{background:#14221f;color:#d9ffea;text-align:left}
+    .controls{display:flex;margin-top:12px;gap:8px}
+    input[type=text]{flex:1;padding:10px;border-radius:6px;border:1px solid #223}
+    button{padding:10px 14px;border-radius:6px;border:none;background:#1f6feb;color:#fff}
+    small{opacity:.8}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>J.A.R.V.I.S. — Local UI</h1>
+    <div id="log" aria-live="polite"></div>
+    <div class="controls">
+      <input id="inp" type="text" placeholder="Type a message..." />
+      <button id="send">Send</button>
+      <button id="tts">Browser TTS</button>
+    </div>
+    <p><small>If you want full model-powered replies, run <strong>python jarvis.py --serve</strong> and keep this page served from that process.</small></p>
+  </div>
+
+  <script>
+    const log = document.getElementById('log');
+    const inp = document.getElementById('inp');
+    const send = document.getElementById('send');
+    const ttsBtn = document.getElementById('tts');
+    let useBrowserTTS = true;
+
+    function append(text, cls){
+      const d = document.createElement('div');
+      d.className = 'msg ' + cls; d.textContent = text; log.appendChild(d); log.scrollTop = log.scrollHeight;
+    }
+
+    send.addEventListener('click', async ()=>{
+      const msg = inp.value.trim(); if(!msg) return; inp.value=''; append(msg,'user');
+
+      // Try sending to local server API
+      try{
+        const res = await fetch('/api/chat', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});
+        if(res.ok){
+          const j = await res.json(); append(j.reply,'bot');
+          if(useBrowserTTS) speakBrowser(j.reply);
+          return;
+        }
+      }catch(e){
+        console.warn('Server unreachable', e);
+      }
+    });
+
+    inp.addEventListener('keydown', (e)=>{ if(e.key==='Enter') send.click(); });
+
+    ttsBtn.addEventListener('click', ()=>{ useBrowserTTS = !useBrowserTTS; ttsBtn.textContent = useBrowserTTS? 'Browser TTS ✓' : 'Browser TTS'; });
+
+    function speakBrowser(text){
+      if(!('speechSynthesis' in window)) return;
+      try{
+        const u = new SpeechSynthesisUtterance(text);
+        u.rate = 1; window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
+      }catch(e){console.warn(e)}
+    }
+  </script>
+</body>
+</html>
