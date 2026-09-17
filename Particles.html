@@ -3,97 +3,171 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Neural Particle Sandbox - WebGL Edition</title>
+  <title>Neural Particle Sandbox V2 - WebGL GPU</title>
   <style>
-    * { box-sizing: border-box; touch-action: none; }
+    * {
+      box-sizing: border-box;
+      touch-action: none;
+    }
+
     body {
       margin: 0;
       padding: 0;
       overflow: hidden;
       background-color: #050505;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       user-select: none;
       -webkit-user-select: none;
     }
+
     canvas {
       display: block;
-      width: 100vw;
-      height: 100vh;
       position: absolute;
       top: 0;
       left: 0;
+      width: 100vw;
+      height: 100vh;
     }
+
+    /* HUD Styling */
     #hud {
       position: absolute;
-      top: 12px;
-      left: 12px;
-      width: min(280px, calc(100vw - 24px));
+      top: 16px;
+      left: 16px;
+      width: min(280px, calc(100vw - 32px));
       background: rgba(10, 10, 14, 0.85);
       color: #eee;
-      padding: 14px;
+      padding: 16px;
       border-radius: 12px;
       border: 1px solid rgba(0, 255, 204, 0.25);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
       z-index: 10;
-      transition: transform 0.25s ease;
+      transition: box-shadow 0.2s, max-height 0.25s ease;
     }
-    #hud.collapsed #hud-content { display: none; }
-    .header {
+
+    #hud.dragging {
+      box-shadow: 0 20px 45px rgba(0,0,0,0.8);
+      border-color: rgba(0, 255, 204, 0.5);
+    }
+
+    #hud-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      cursor: pointer;
+      border-bottom: 1px solid rgba(0, 255, 204, 0.3);
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+      cursor: grab;
     }
+
+    #hud-header:active { cursor: grabbing; }
+
+    #hud.minimized #hud-header {
+      margin-bottom: 0;
+      border-bottom: none;
+    }
+
+    #hud-body {
+      overflow: hidden;
+      max-height: 600px;
+      transition: max-height 0.25s ease, opacity 0.2s ease;
+      opacity: 1;
+    }
+
+    #hud.minimized #hud-body {
+      max-height: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+
     h1 {
       margin: 0;
-      font-size: 0.95rem;
+      font-size: 1rem;
       letter-spacing: 1.5px;
       text-transform: uppercase;
       color: #00ffcc;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
     }
-    .toggle-btn {
-      background: none;
-      border: none;
-      color: #00ffcc;
+
+    #minimize-btn {
+      flex: none;
+      width: 24px;
+      height: 24px;
+      padding: 0;
       font-size: 1rem;
-      padding: 2px 6px;
+      line-height: 1;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #00ffcc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
     }
+
+    .swatch-group {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .swatch {
+      flex: 1;
+      height: 22px;
+      border-radius: 4px;
+      border: 2px solid rgba(255,255,255,0.15);
+      cursor: pointer;
+      padding: 0;
+      transition: all 0.2s;
+    }
+
+    .swatch:hover { border-color: rgba(255,255,255,0.5); transform: scale(1.05); }
+    .swatch.active { border-color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.6); }
+
     .stat-row {
       display: flex;
       justify-content: space-between;
       font-size: 0.75rem;
-      color: #888;
-      margin-top: 6px;
+      color: #aaa;
+      margin-bottom: 5px;
     }
+
     .stat-val { color: #fff; font-family: monospace; }
+
     .control-group {
-      margin-top: 12px;
+      margin-top: 14px;
       border-top: 1px solid rgba(255,255,255,0.1);
       padding-top: 10px;
     }
+
     label {
       display: block;
-      font-size: 0.65rem;
+      font-size: 0.7rem;
       color: #00ffcc;
       margin-bottom: 4px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
+
     input[type="range"] {
       width: 100%;
       background: transparent;
       -webkit-appearance: none;
       margin-bottom: 10px;
     }
+
     input[type="range"]::-webkit-slider-runnable-track {
       width: 100%;
       height: 4px;
       background: #222;
       border-radius: 2px;
     }
+
     input[type="range"]::-webkit-slider-thumb {
       -webkit-appearance: none;
       height: 16px;
@@ -101,110 +175,180 @@
       border-radius: 50%;
       background: #00ffcc;
       margin-top: -6px;
-      box-shadow: 0 0 8px #00ffcc;
+      cursor: pointer;
+      box-shadow: 0 0 10px #00ffcc;
     }
-    .btn-group { display: flex; gap: 6px; margin-top: 4px; }
+
+    .btn-group {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
     button.mode-btn {
       flex: 1;
       background: rgba(255,255,255,0.06);
       border: 1px solid rgba(255,255,255,0.12);
       color: #ccc;
-      padding: 6px;
+      padding: 6px 4px;
       font-size: 0.65rem;
-      border-radius: 4px;
       cursor: pointer;
+      transition: all 0.2s;
       text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-radius: 4px;
     }
+
+    button.mode-btn:hover { background: rgba(0, 255, 204, 0.1); border-color: #00ffcc; color: #fff; }
     button.mode-btn.active {
       background: #00ffcc;
       color: #050505;
-      font-weight: 700;
+      font-weight: bold;
       border-color: #00ffcc;
-      box-shadow: 0 0 10px rgba(0,255,204,0.4);
+      box-shadow: 0 0 12px rgba(0,255,204,0.4);
     }
+
     .guide {
-      margin-top: 10px;
+      margin-top: 14px;
       font-size: 0.65rem;
       color: #777;
       line-height: 1.4;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding-top: 8px;
     }
   </style>
 </head>
 <body>
 
   <div id="hud">
-    <div class="header" onclick="toggleHud()">
-      <h1>Core WebGL <span style="font-size:0.7em; opacity:0.6">v2.5</span></h1>
-      <button class="toggle-btn" id="hud-toggle">−</button>
+    <div id="hud-header">
+      <h1>System Core <span style="font-size:0.7em; opacity:0.5">v2.5 GL</span></h1>
+      <button id="minimize-btn" title="Toggle Panel">&minus;</button>
     </div>
-    <div id="hud-content">
+
+    <div id="hud-body">
       <div class="stat-row">
-        <span>Active Entities</span>
+        <span>Particles</span>
         <span class="stat-val" id="count-display">0</span>
       </div>
       <div class="stat-row">
-        <span>Framerate</span>
-        <span class="stat-val" id="fps-display">60 FPS</span>
+        <span>FPS</span>
+        <span class="stat-val">
+          <span id="fps-display">60</span>
+          <span id="perf-badge" title="Auto-lightened for smoother performance" style="display:none; margin-left:6px; color:#050505; background:#00ffcc; border-radius:3px; padding:1px 5px; font-size:0.6rem; letter-spacing:0.5px;">LITE</span>
+        </span>
       </div>
+
       <div class="control-group">
-        <label>Kinetic Multiplier</label>
-        <input type="range" id="speed-mult" min="0.2" max="3.0" step="0.1" value="1.0">
+        <label>Neural Connection Range</label>
+        <input type="range" id="connect-dist" min="0" max="150" value="0">
+
+        <label>Physics Speed</label>
+        <input type="range" id="speed-mult" min="0.1" max="3" step="0.1" value="1">
+      </div>
+
+      <div class="control-group">
         <label>Simulation Mode</label>
         <div class="btn-group">
-          <button class="mode-btn" onclick="setMode('neural')" id="btn-neural">Neural</button>
-          <button class="mode-btn active" onclick="setMode('swarm')" id="btn-swarm">Swarm</button>
-          <button class="mode-btn" onclick="setMode('chaos')" id="btn-chaos">Chaos</button>
+          <button onclick="setMode('neural')" id="btn-neural" class="mode-btn">Neural</button>
+          <button onclick="setMode('swarm')" id="btn-swarm" class="mode-btn active">Swarm</button>
+          <button onclick="setMode('chaos')" id="btn-chaos" class="mode-btn">Chaos</button>
         </div>
       </div>
+
+      <div class="control-group">
+        <label>Performance Profile</label>
+        <div class="btn-group">
+          <button onclick="setPerfMode('auto')" id="btn-perf-auto" class="mode-btn active">Auto</button>
+          <button onclick="setPerfMode('on')" id="btn-perf-on" class="mode-btn">Lite</button>
+          <button onclick="setPerfMode('off')" id="btn-perf-off" class="mode-btn">Full</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>Color Palette</label>
+        <div class="swatch-group" id="color-swatches">
+          <button class="swatch active" data-scheme="cyan" style="background:linear-gradient(90deg,hsl(160,100%,55%),hsl(220,100%,60%))" title="Cyan/Blue"></button>
+          <button class="swatch" data-scheme="fire" style="background:linear-gradient(90deg,hsl(0,100%,55%),hsl(45,100%,55%))" title="Fire"></button>
+          <button class="swatch" data-scheme="magenta" style="background:linear-gradient(90deg,hsl(280,100%,60%),hsl(330,100%,60%))" title="Magenta"></button>
+          <button class="swatch" data-scheme="rainbow" style="background:linear-gradient(90deg,red,orange,yellow,green,blue,violet)" title="Rainbow"></button>
+          <button class="swatch" data-scheme="mono" style="background:linear-gradient(90deg,#888,#fff)" title="Mono"></button>
+        </div>
+      </div>
+
       <div class="guide">
-        • <b>1 Finger / Left Click:</b> Gravity Well<br>
-        • <b>2 Fingers / Right Click:</b> Repulsion Field<br>
-        • <b>Double Tap:</b> Shockwave Impulses
+        [1-Finger / L-Click] Gravity Well<br>
+        [2-Finger / R-Click] Repulsion Field<br>
+        [L+R Held] Full Chaos Burst<br>
+        [Double-Tap / Click] Shockwave<br>
+        [Idle &gt; 4.5s] Spiral Galaxy Form<br>
+        [Drag Header] Reposition Deck
       </div>
     </div>
   </div>
 
-  <canvas id="glcanvas"></canvas>
+  <canvas id="canvas"></canvas>
 
   <script>
-    const canvas = document.getElementById('glcanvas');
-    const gl = canvas.getContext('webgl', { powerPreference: 'high-performance', alpha: false });
+    /**
+     * WebGL Shaders & GPU Pipeline
+     */
+    const canvas = document.getElementById('canvas');
+    const gl = canvas.getContext('webgl', { powerPreference: 'high-performance', alpha: false, antialias: false });
 
     if (!gl) {
-      alert('WebGL not supported on this device.');
+      alert('WebGL is not supported on this browser or hardware.');
     }
 
-    // UI elements
-    const uiFps = document.getElementById('fps-display');
+    // UI Elements
     const uiCount = document.getElementById('count-display');
+    const uiFps = document.getElementById('fps-display');
+    const uiPerfBadge = document.getElementById('perf-badge');
+    const inputDist = document.getElementById('connect-dist');
     const inputSpeed = document.getElementById('speed-mult');
     const hud = document.getElementById('hud');
-    const hudToggle = document.getElementById('hud-toggle');
+    const hudHeader = document.getElementById('hud-header');
+    const minimizeBtn = document.getElementById('minimize-btn');
     const btns = {
       neural: document.getElementById('btn-neural'),
       swarm: document.getElementById('btn-swarm'),
       chaos: document.getElementById('btn-chaos')
     };
-
-    function toggleHud() {
-      hud.classList.toggle('collapsed');
-      hudToggle.textContent = hud.classList.contains('collapsed') ? '+' : '−';
-    }
-
-    // Adapt particle allocation dynamically based on mobile vs desktop
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768;
-    const PARTICLE_COUNT = isMobile ? 1200 : 2500;
-    uiCount.innerText = PARTICLE_COUNT.toLocaleString();
-
-    const config = {
-      speedMult: 1.0,
-      friction: 0.96,
-      mode: 'swarm',
-      baseSpeed: 1.5
+    const perfBtns = {
+      auto: document.getElementById('btn-perf-auto'),
+      on: document.getElementById('btn-perf-on'),
+      off: document.getElementById('btn-perf-off')
     };
 
-    // Shaders
-    const vsSource = `
+    // Hardware & Particle Scaler (Conserves mobile thermals while staying smooth)
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768;
+    const TOTAL_PARTICLES = isMobile ? 1200 : 1800;
+
+    const config = {
+      count: TOTAL_PARTICLES,
+      baseSpeed: 1.5,
+      friction: 0.96,
+      connectDist: 0,
+      speedMult: 1.0,
+      mode: 'swarm',
+      colorScheme: 'cyan',
+      perfMode: 'auto'
+    };
+
+    let width = 0, height = 0;
+    let dpr = 1.0;
+
+    // Color scheme metadata
+    const colorSchemes = {
+      cyan:    { hueMin: 160, hueRange: 60,  sat: 1.0, rgb: [0.0, 1.0, 0.8] },
+      fire:    { hueMin: 0,   hueRange: 45,  sat: 1.0, rgb: [1.0, 0.47, 0.0] },
+      magenta: { hueMin: 280, hueRange: 50,  sat: 1.0, rgb: [0.86, 0.0, 1.0] },
+      rainbow: { hueMin: 0,   hueRange: 360, sat: 1.0, rgb: [1.0, 1.0, 1.0] },
+      mono:    { hueMin: 0,   hueRange: 0,   sat: 0.0, rgb: [1.0, 1.0, 1.0] }
+    };
+
+    // --- GLSL Shaders ---
+    const vsParticle = `
       attribute vec2 a_position;
       attribute vec4 a_color;
       attribute float a_size;
@@ -214,16 +358,14 @@
 
       void main() {
         vec2 zeroToOne = a_position / u_resolution;
-        vec2 zeroToTwo = zeroToOne * 2.0;
-        vec2 clipSpace = zeroToTwo - 1.0;
-
-        gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
+        vec2 clipSpace = (zeroToOne * 2.0 - 1.0) * vec2(1.0, -1.0);
+        gl_Position = vec4(clipSpace, 0.0, 1.0);
         gl_PointSize = a_size;
         v_color = a_color;
       }
     `;
 
-    const fsSource = `
+    const fsParticle = `
       precision mediump float;
       varying vec4 v_color;
 
@@ -234,55 +376,98 @@
       }
     `;
 
-    function createShader(gl, type, source) {
-      const shader = gl.createShader(type);
-      gl.shaderSource(shader, source);
-      gl.compileShader(shader);
-      return shader;
+    const vsLine = `
+      attribute vec2 a_position;
+      attribute vec4 a_color;
+      uniform vec2 u_resolution;
+      varying vec4 v_color;
+
+      void main() {
+        vec2 zeroToOne = a_position / u_resolution;
+        vec2 clipSpace = (zeroToOne * 2.0 - 1.0) * vec2(1.0, -1.0);
+        gl_Position = vec4(clipSpace, 0.0, 1.0);
+        v_color = a_color;
+      }
+    `;
+
+    const fsLine = `
+      precision mediump float;
+      varying vec4 v_color;
+
+      void main() {
+        gl_FragColor = v_color;
+      }
+    `;
+
+    function buildProgram(vsSrc, fsSrc) {
+      function createShader(type, src) {
+        const s = gl.createShader(type);
+        gl.shaderSource(s, src);
+        gl.compileShader(s);
+        return s;
+      }
+      const prog = gl.createProgram();
+      gl.attachShader(prog, createShader(gl.VERTEX_SHADER, vsSrc));
+      gl.attachShader(prog, createShader(gl.FRAGMENT_SHADER, fsSrc));
+      gl.linkProgram(prog);
+      return prog;
     }
 
-    const program = gl.createProgram();
-    gl.attachShader(program, createShader(gl, gl.VERTEX_SHADER, vsSource));
-    gl.attachShader(program, createShader(gl, gl.FRAGMENT_SHADER, fsSource));
-    gl.linkProgram(program);
-    gl.useProgram(program);
+    const particleProgram = buildProgram(vsParticle, fsParticle);
+    const lineProgram = buildProgram(vsLine, fsLine);
 
-    // Buffers & Layouts
-    const positionBuffer = gl.createBuffer();
-    const colorBuffer = gl.createBuffer();
-    const sizeBuffer = gl.createBuffer();
+    // Particle Program Locations
+    const pLoc = {
+      pos: gl.getAttribLocation(particleProgram, 'a_position'),
+      col: gl.getAttribLocation(particleProgram, 'a_color'),
+      size: gl.getAttribLocation(particleProgram, 'a_size'),
+      res: gl.getUniformLocation(particleProgram, 'u_resolution')
+    };
 
-    const aPositionLoc = gl.getAttribLocation(program, 'a_position');
-    const aColorLoc = gl.getAttribLocation(program, 'a_color');
-    const aSizeLoc = gl.getAttribLocation(program, 'a_size');
-    const uResolutionLoc = gl.getUniformLocation(program, 'u_resolution');
+    // Line Program Locations
+    const lLoc = {
+      pos: gl.getAttribLocation(lineProgram, 'a_position'),
+      col: gl.getAttribLocation(lineProgram, 'a_color'),
+      res: gl.getUniformLocation(lineProgram, 'u_resolution')
+    };
 
-    // Float32 arrays for GPU streaming
-    const positions = new Float32Array(PARTICLE_COUNT * 2);
-    const colors = new Float32Array(PARTICLE_COUNT * 4);
-    const sizes = new Float32Array(PARTICLE_COUNT);
+    // GPU Buffers
+    const pPosBuffer = gl.createBuffer();
+    const pColBuffer = gl.createBuffer();
+    const pSizeBuffer = gl.createBuffer();
+    const lPosBuffer = gl.createBuffer();
+    const lColBuffer = gl.createBuffer();
 
-    // CPU-side state tracking
-    const velocities = new Float32Array(PARTICLE_COUNT * 2);
-    const hues = new Float32Array(PARTICLE_COUNT);
-    const baseHues = new Float32Array(PARTICLE_COUNT);
+    // Fast Float Arrays for WebGL Streaming
+    const pPositions = new Float32Array(TOTAL_PARTICLES * 2);
+    const pColors = new Float32Array(TOTAL_PARTICLES * 4);
+    const pSizes = new Float32Array(TOTAL_PARTICLES);
+    const pVelocities = new Float32Array(TOTAL_PARTICLES * 2);
+    const pHues = new Float32Array(TOTAL_PARTICLES);
+    const pBaseHues = new Float32Array(TOTAL_PARTICLES);
+    const pIdleSlots = new Uint16Array(TOTAL_PARTICLES);
 
-    let width = 0, height = 0;
+    // Dynamic Line Buffers (Cap at 20,000 links)
+    const MAX_LINES = 20000;
+    const lPositions = new Float32Array(MAX_LINES * 4);
+    const lColors = new Float32Array(MAX_LINES * 8);
 
-    function resize() {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      width = window.innerWidth;
-      height = window.innerHeight;
+    // --- Spatial Hash Optimization ---
+    const GRID_SIZE = 100;
+    let grid = {};
 
-      canvas.width = width * dpr;
-      canvas.height = height * dpr;
-
-      gl.viewport(0, 0, canvas.width, canvas.height);
-      gl.uniform2f(uResolutionLoc, width, height);
+    function clearGrid() { grid = {}; }
+    function addToGrid(idx, px, py) {
+      const col = (px / GRID_SIZE) | 0;
+      const row = (py / GRID_SIZE) | 0;
+      const key = `${col},${row}`;
+      if (!grid[key]) grid[key] = [];
+      grid[key].push(idx);
     }
 
     function hslToRgb(h, s, l) {
-      h /= 360;
+      h = (h % 360) / 360;
+      if (h < 0) h += 1;
       let r, g, b;
       if (s === 0) {
         r = g = b = l;
@@ -304,242 +489,564 @@
       return [r, g, b];
     }
 
-    function initParticles() {
-      for (let i = 0; i < PARTICLE_COUNT; i++) {
+    function initParticleState() {
+      const scheme = colorSchemes[config.colorScheme];
+      for (let i = 0; i < TOTAL_PARTICLES; i++) {
         const i2 = i * 2;
         const i4 = i * 4;
 
-        positions[i2] = Math.random() * width;
-        positions[i2 + 1] = Math.random() * height;
+        pPositions[i2] = Math.random() * width;
+        pPositions[i2 + 1] = Math.random() * height;
 
-        velocities[i2] = (Math.random() - 0.5) * config.baseSpeed;
-        velocities[i2 + 1] = (Math.random() - 0.5) * config.baseSpeed;
+        pVelocities[i2] = (Math.random() - 0.5) * config.baseSpeed;
+        pVelocities[i2 + 1] = (Math.random() - 0.5) * config.baseSpeed;
 
-        const baseHue = Math.random() * 60 + 160;
-        baseHues[i] = baseHue;
-        hues[i] = baseHue;
+        const hue = scheme.hueMin + Math.random() * scheme.hueRange;
+        pBaseHues[i] = hue;
+        pHues[i] = hue;
 
-        const [r, g, b] = hslToRgb(baseHue, 1.0, 0.6);
-        colors[i4] = r;
-        colors[i4 + 1] = g;
-        colors[i4 + 2] = b;
-        colors[i4 + 3] = 0.9;
+        const [r, g, b] = hslToRgb(hue, scheme.sat, 0.6);
+        pColors[i4] = r;
+        pColors[i4 + 1] = g;
+        pColors[i4 + 2] = b;
+        pColors[i4 + 3] = 0.9;
 
-        sizes[i] = (Math.random() * 2.5 + 2.0) * (window.devicePixelRatio || 1);
+        pSizes[i] = (Math.random() * 2.2 + 1.8) * dpr;
+        pIdleSlots[i] = i;
+      }
+      uiCount.innerText = TOTAL_PARTICLES.toLocaleString();
+    }
+
+    function updateColorScheme() {
+      const scheme = colorSchemes[config.colorScheme];
+      for (let i = 0; i < TOTAL_PARTICLES; i++) {
+        const hue = scheme.hueMin + Math.random() * scheme.hueRange;
+        pBaseHues[i] = hue;
+        pHues[i] = hue;
+        const [r, g, b] = hslToRgb(hue, scheme.sat, 0.6);
+        const i4 = i * 4;
+        pColors[i4] = r;
+        pColors[i4 + 1] = g;
+        pColors[i4 + 2] = b;
       }
     }
 
-    // Touch & Pointer State Tracking
-    const touchState = {
+    // --- Idle Formation Logic ---
+    let lastInteraction = performance.now();
+    const IDLE_THRESHOLD = 4500;
+    let idleT = 0;
+
+    function getIdleTarget(slot, idleTime) {
+      const total = TOTAL_PARTICLES;
+      const arms = 5;
+      const armIndex = slot % arms;
+      const perArm = Math.ceil(total / arms);
+      const posInArm = Math.floor(slot / arms);
+      const t = perArm > 1 ? posInArm / (perArm - 1) : 0;
+
+      const cx = width / 2;
+      const cy = height / 2;
+      const maxRadius = Math.min(width, height) * 0.38;
+
+      const rotation = idleTime * 0.00025;
+      const breathe = 1 + Math.sin(idleTime * 0.0015 + t * 8) * 0.06;
+      const radius = t * maxRadius * breathe;
+      const angle = armIndex * ((Math.PI * 2) / arms) + t * 4.2 + rotation;
+
+      return {
+        x: cx + Math.cos(angle) * radius,
+        y: cy + Math.sin(angle) * radius
+      };
+    }
+
+    function densityWave(y, idleTime) {
+      const freq = 0.006;
+      const speed = 0.0006;
+      return 0.6 + 0.4 * Math.sin(y * freq - idleTime * speed);
+    }
+
+    // --- Touch & Pointer State Tracker ---
+    const pointer = {
       x: -1000,
       y: -1000,
       active: false,
-      type: 'attract' // 'attract' | 'repel'
+      type: 'attract', // 'attract' | 'repel'
+      leftDown: false,
+      rightDown: false
     };
 
-    // Unified Pointer/Touch Handlers
-    function updateTouch(x, y, active, type = 'attract') {
-      touchState.x = x;
-      touchState.y = y;
-      touchState.active = active;
-      touchState.type = type;
+    let comboActive = false;
+    let lastTapTime = 0;
+
+    function resetPointer() {
+      pointer.active = pointer.leftDown || pointer.rightDown;
+      if (!pointer.active) {
+        pointer.x = -1000;
+        pointer.y = -1000;
+      }
     }
 
-    // Mobile touch events
+    // Mobile Touch
     window.addEventListener('touchstart', e => {
       if (e.target.closest('#hud')) return;
+      lastInteraction = performance.now();
       const touches = e.touches;
       if (touches.length === 1) {
-        updateTouch(touches[0].clientX, touches[0].clientY, true, 'attract');
+        pointer.x = touches[0].clientX;
+        pointer.y = touches[0].clientY;
+        pointer.active = true;
+        pointer.type = 'attract';
       } else if (touches.length >= 2) {
-        // Multi-touch acts as repulsion field
-        const midX = (touches[0].clientX + touches[1].clientX) / 2;
-        const midY = (touches[0].clientY + touches[1].clientY) / 2;
-        updateTouch(midX, midY, true, 'repel');
+        pointer.x = (touches[0].clientX + touches[1].clientX) / 2;
+        pointer.y = (touches[0].clientY + touches[1].clientY) / 2;
+        pointer.active = true;
+        pointer.type = 'repel';
       }
-    }, { passive: false });
+    }, { passive: true });
 
     window.addEventListener('touchmove', e => {
       if (e.target.closest('#hud')) return;
+      lastInteraction = performance.now();
       const touches = e.touches;
       if (touches.length === 1) {
-        updateTouch(touches[0].clientX, touches[0].clientY, true, 'attract');
+        pointer.x = touches[0].clientX;
+        pointer.y = touches[0].clientY;
       } else if (touches.length >= 2) {
-        const midX = (touches[0].clientX + touches[1].clientX) / 2;
-        const midY = (touches[0].clientY + touches[1].clientY) / 2;
-        updateTouch(midX, midY, true, 'repel');
+        pointer.x = (touches[0].clientX + touches[1].clientX) / 2;
+        pointer.y = (touches[0].clientY + touches[1].clientY) / 2;
       }
-    }, { passive: false });
+    }, { passive: true });
 
-    window.addEventListener('touchend', e => {
-      if (e.touches.length === 0) {
-        touchState.active = false;
-      }
-    });
-
-    // Double tap detection for mobile shockwave
-    let lastTap = 0;
     window.addEventListener('touchend', e => {
       if (e.target.closest('#hud')) return;
+      lastInteraction = performance.now();
+      if (e.touches.length === 0) {
+        pointer.active = false;
+      }
+
+      // Mobile Double Tap
       const now = performance.now();
-      if (now - lastTap < 300) {
+      if (now - lastTapTime < 300 && e.changedTouches.length > 0) {
         triggerShockwave(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
       }
-      lastTap = now;
-    });
+      lastTapTime = now;
+    }, { passive: true });
 
-    // Desktop pointer events
+    // Desktop Pointer Handlers
     window.addEventListener('mousemove', e => {
-      if (!touchState.active) return;
-      touchState.x = e.clientX;
-      touchState.y = e.clientY;
+      pointer.x = e.clientX;
+      pointer.y = e.clientY;
+      lastInteraction = performance.now();
     });
 
     window.addEventListener('mousedown', e => {
       if (e.target.closest('#hud')) return;
-      updateTouch(e.clientX, e.clientY, true, e.button === 2 ? 'repel' : 'attract');
+      lastInteraction = performance.now();
+
+      if (e.button === 0) {
+        pointer.leftDown = true;
+        pointer.type = pointer.rightDown ? pointer.type : 'attract';
+      } else if (e.button === 2) {
+        pointer.rightDown = true;
+        pointer.type = pointer.leftDown ? pointer.type : 'repel';
+      }
+      pointer.active = true;
     });
 
-    window.addEventListener('mouseup', () => touchState.active = false);
+    window.addEventListener('mouseup', e => {
+      if (e.button === 0) pointer.leftDown = false;
+      if (e.button === 2) pointer.rightDown = false;
+      resetPointer();
+      lastInteraction = performance.now();
+    });
+
     window.addEventListener('contextmenu', e => e.preventDefault());
+
     window.addEventListener('dblclick', e => {
       if (e.target.closest('#hud')) return;
+      lastInteraction = performance.now();
       triggerShockwave(e.clientX, e.clientY);
     });
 
-    function triggerShockwave(x, y) {
-      for (let i = 0; i < PARTICLE_COUNT; i++) {
+    function triggerShockwave(originX, originY) {
+      for (let i = 0; i < TOTAL_PARTICLES; i++) {
         const i2 = i * 2;
-        const dx = positions[i2] - x;
-        const dy = positions[i2 + 1] - y;
+        const dx = pPositions[i2] - originX;
+        const dy = pPositions[i2 + 1] - originY;
         const angle = Math.atan2(dy, dx);
-        velocities[i2] += Math.cos(angle) * 24.0;
-        velocities[i2 + 1] += Math.sin(angle) * 24.0;
-        hues[i] = 50; // Shockwave flash
+        pVelocities[i2] += Math.cos(angle) * 28;
+        pVelocities[i2 + 1] += Math.sin(angle) * 28;
+        pHues[i] = 50; // Yellow burst
       }
     }
 
-    // UI Configuration
+    // --- HUD Controls & Dragging ---
+    let isDraggingHud = false;
+    let dragOffset = { x: 0, y: 0 };
+
+    hudHeader.addEventListener('mousedown', e => {
+      if (e.target.id === 'minimize-btn') return;
+      isDraggingHud = true;
+      hud.classList.add('dragging');
+      const rect = hud.getBoundingClientRect();
+      dragOffset.x = e.clientX - rect.left;
+      dragOffset.y = e.clientY - rect.top;
+      hud.style.left = rect.left + 'px';
+      hud.style.top = rect.top + 'px';
+      e.preventDefault();
+    });
+
+    window.addEventListener('mousemove', e => {
+      if (!isDraggingHud) return;
+      const maxX = window.innerWidth - hud.offsetWidth;
+      const maxY = window.innerHeight - hud.offsetHeight;
+      let newX = Math.max(0, Math.min(maxX, e.clientX - dragOffset.x));
+      let newY = Math.max(0, Math.min(maxY, e.clientY - dragOffset.y));
+      hud.style.left = newX + 'px';
+      hud.style.top = newY + 'px';
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (isDraggingHud) {
+        isDraggingHud = false;
+        hud.classList.remove('dragging');
+      }
+    });
+
+    minimizeBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      hud.classList.toggle('minimized');
+      minimizeBtn.innerHTML = hud.classList.contains('minimized') ? '&#43;' : '&minus;';
+    });
+
+    const swatchButtons = document.querySelectorAll('#color-swatches .swatch');
+    swatchButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        config.colorScheme = btn.dataset.scheme;
+        swatchButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        updateColorScheme();
+      });
+    });
+
+    inputDist.addEventListener('input', e => config.connectDist = parseInt(e.target.value));
     inputSpeed.addEventListener('input', e => config.speedMult = parseFloat(e.target.value));
 
     window.setMode = function(mode) {
+      lastInteraction = performance.now();
       config.mode = mode;
       Object.values(btns).forEach(b => b.classList.remove('active'));
       btns[mode].classList.add('active');
 
       if (mode === 'neural') {
-        config.speedMult = 0.6;
-        config.friction = 0.92;
+        config.connectDist = 100;
+        inputDist.value = 100;
+        config.speedMult = 0.5;
+        inputSpeed.value = 0.5;
+        config.friction = 0.90;
       } else if (mode === 'swarm') {
+        config.connectDist = 0;
+        inputDist.value = 0;
         config.speedMult = 1.2;
+        inputSpeed.value = 1.2;
         config.friction = 0.96;
       } else if (mode === 'chaos') {
-        config.speedMult = 2.2;
+        config.connectDist = 40;
+        inputDist.value = 40;
+        config.speedMult = 2.0;
+        inputSpeed.value = 2.0;
         config.friction = 0.98;
       }
-      inputSpeed.value = config.speedMult;
     };
 
-    // Render loop
-    let lastTime = 0;
-    let frames = 0;
+    let perfActive = false;
+    let fpsHistory = [];
+    let skipConnectionFrame = false;
 
-    function render(now) {
-      if (now - lastTime >= 1000) {
-        uiFps.innerText = `${frames} FPS`;
-        frames = 0;
-        lastTime = now;
+    window.setPerfMode = function(mode) {
+      config.perfMode = mode;
+      Object.values(perfBtns).forEach(b => b.classList.remove('active'));
+      perfBtns[mode].classList.add('active');
+
+      if (mode === 'on') {
+        perfActive = true;
+      } else if (mode === 'off') {
+        perfActive = false;
+      } else {
+        perfActive = false;
+        fpsHistory = [];
       }
-      frames++;
+      updatePerfBadge();
+    };
+
+    function checkPerformance(fps) {
+      if (config.perfMode === 'on') { perfActive = true; return; }
+      if (config.perfMode === 'off') { perfActive = false; return; }
+
+      fpsHistory.push(fps);
+      if (fpsHistory.length > 4) fpsHistory.shift();
+      const avg = fpsHistory.reduce((a, b) => a + b, 0) / fpsHistory.length;
+
+      if (!perfActive && avg < 40 && fpsHistory.length >= 3) {
+        perfActive = true;
+        updatePerfBadge();
+      } else if (perfActive && avg > 55 && fpsHistory.length >= 3) {
+        perfActive = false;
+        updatePerfBadge();
+      }
+    }
+
+    function updatePerfBadge() {
+      if (!uiPerfBadge) return;
+      uiPerfBadge.style.display = (perfActive && config.perfMode === 'auto') ? 'inline' : 'none';
+    }
+
+    function resize() {
+      dpr = Math.min(window.devicePixelRatio || 1, 2.0);
+      width = window.innerWidth;
+      height = window.innerHeight;
+
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+
+      gl.viewport(0, 0, canvas.width, canvas.height);
+    }
+
+    window.addEventListener('resize', () => {
+      resize();
+      initParticleState();
+    });
+
+    // --- Main Render Engine ---
+    let lastTime = performance.now();
+    let frameCount = 0;
+
+    function animate(time) {
+      // FPS Diagnostics
+      if (time - lastTime >= 1000) {
+        uiFps.innerText = frameCount;
+        checkPerformance(frameCount);
+        frameCount = 0;
+        lastTime = time;
+      }
+      frameCount++;
+
+      comboActive = pointer.leftDown && pointer.rightDown;
+      if (comboActive) lastInteraction = time;
+
+      const sinceInput = time - lastInteraction;
+      idleT = sinceInput > IDLE_THRESHOLD ? (sinceInput - IDLE_THRESHOLD) : 0;
+
+      clearGrid();
 
       const speed = config.speedMult;
       const friction = config.friction;
       const isChaos = config.mode === 'chaos';
+      const scheme = colorSchemes[config.colorScheme];
 
-      for (let i = 0; i < PARTICLE_COUNT; i++) {
+      // Physics & Particle Array Updates
+      for (let i = 0; i < TOTAL_PARTICLES; i++) {
         const i2 = i * 2;
         const i4 = i * 4;
 
-        // Kinematics
-        positions[i2] += velocities[i2] * speed;
-        positions[i2 + 1] += velocities[i2 + 1] * speed;
+        pPositions[i2] += pVelocities[i2] * speed;
+        pPositions[i2 + 1] += pVelocities[i2 + 1] * speed;
 
-        velocities[i2] *= friction;
-        velocities[i2 + 1] *= friction;
+        pVelocities[i2] *= friction;
+        pVelocities[i2 + 1] *= friction;
 
-        // Interactive gravity/repulsion calculations
-        if (touchState.active) {
-          const dx = touchState.x - positions[i2];
-          const dy = touchState.y - positions[i2 + 1];
+        // Pointer Gravity / Repel
+        if (pointer.active) {
+          const dx = pointer.x - pPositions[i2];
+          const dy = pointer.y - pPositions[i2 + 1];
           const distSq = dx * dx + dy * dy;
 
           if (distSq < 160000 && distSq > 4) {
             const force = (400 - Math.sqrt(distSq)) / 400;
             const angle = Math.atan2(dy, dx);
-            const dir = touchState.type === 'attract' ? 0.6 : -2.4;
+            const dir = pointer.type === 'attract' ? 0.6 : -3.0;
 
-            velocities[i2] += Math.cos(angle) * force * dir;
-            velocities[i2 + 1] += Math.sin(angle) * force * dir;
-            hues[i] = baseHues[i] + 80;
+            pVelocities[i2] += Math.cos(angle) * force * dir;
+            pVelocities[i2 + 1] += Math.sin(angle) * force * dir;
+            pHues[i] = pBaseHues[i] + 90;
           }
         }
 
-        if (isChaos) {
-          velocities[i2] += (Math.random() - 0.5) * 0.3;
-          velocities[i2 + 1] += (Math.random() - 0.5) * 0.3;
+        // Combo Click / Burst
+        if (comboActive) {
+          const dx = pPositions[i2] - pointer.x;
+          const dy = pPositions[i2 + 1] - pointer.y;
+          const angle = Math.atan2(dy, dx) + (Math.random() - 0.5) * 1.2;
+          const kick = 6 + Math.random() * 6;
+          pVelocities[i2] += Math.cos(angle) * kick;
+          pVelocities[i2 + 1] += Math.sin(angle) * kick;
+          pHues[i] = (pHues[i] + 25) % 360;
         }
 
         // Color thermal decay
-        if (hues[i] > baseHues[i]) {
-          hues[i] -= 1.5;
-          const [r, g, b] = hslToRgb(hues[i], 1.0, 0.6);
-          colors[i4] = r;
-          colors[i4 + 1] = g;
-          colors[i4 + 2] = b;
+        if (!comboActive && pHues[i] > pBaseHues[i]) {
+          pHues[i] -= 2;
+          const [r, g, b] = hslToRgb(pHues[i], scheme.sat, 0.6);
+          pColors[i4] = r;
+          pColors[i4 + 1] = g;
+          pColors[i4 + 2] = b;
         }
 
-        // Toroidal screen wrap
-        if (positions[i2] < 0) positions[i2] = width;
-        if (positions[i2] > width) positions[i2] = 0;
-        if (positions[i2 + 1] < 0) positions[i2 + 1] = height;
-        if (positions[i2 + 1] > height) positions[i2 + 1] = 0;
+        // Chaos mode Brownian jitter
+        if (isChaos) {
+          pVelocities[i2] += (Math.random() - 0.5) * 0.25;
+          pVelocities[i2 + 1] += (Math.random() - 0.5) * 0.25;
+        }
+
+        // Idle Logarithmic Galaxy Form
+        if (idleT > 0 && !pointer.active && !comboActive) {
+          const target = getIdleTarget(pIdleSlots[i], idleT);
+          const dx = target.x - pPositions[i2];
+          const dy = target.y - pPositions[i2 + 1];
+          const pull = Math.min(idleT / 2000, 1) * 0.02;
+          pVelocities[i2] += dx * pull;
+          pVelocities[i2 + 1] += dy * pull;
+        }
+
+        // Toroidal screen boundary wrap
+        if (pPositions[i2] < 0) pPositions[i2] = width;
+        if (pPositions[i2] > width) pPositions[i2] = 0;
+        if (pPositions[i2 + 1] < 0) pPositions[i2 + 1] = height;
+        if (pPositions[i2 + 1] > height) pPositions[i2 + 1] = 0;
+
+        addToGrid(i, pPositions[i2], pPositions[i2 + 1]);
       }
 
-      // Stream updated state to GPU
-      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, positions, gl.DYNAMIC_DRAW);
-      gl.enableVertexAttribArray(aPositionLoc);
-      gl.vertexAttribPointer(aPositionLoc, 2, gl.FLOAT, false, 0, 0);
+      // Compute Neural Connections
+      let lineVertexCount = 0;
+      skipConnectionFrame = !skipConnectionFrame;
 
-      gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, colors, gl.DYNAMIC_DRAW);
-      gl.enableVertexAttribArray(aColorLoc);
-      gl.vertexAttribPointer(aColorLoc, 4, gl.FLOAT, false, 0, 0);
+      if (config.connectDist > 0 && !(perfActive && skipConnectionFrame)) {
+        const effDist = perfActive ? config.connectDist * 0.65 : config.connectDist;
+        const baseThresholdSq = effDist * effDist;
+        const [cr, cg, cb] = scheme.rgb;
+        const idleActive = idleT > 0;
 
-      gl.bindBuffer(gl.ARRAY_BUFFER, sizeBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, sizes, gl.STATIC_DRAW);
-      gl.enableVertexAttribArray(aSizeLoc);
-      gl.vertexAttribPointer(aSizeLoc, 1, gl.FLOAT, false, 0, 0);
+        for (let i = 0; i < TOTAL_PARTICLES; i++) {
+          if (lineVertexCount >= MAX_LINES * 2) break;
 
-      // Additive blend for particles
+          const px = pPositions[i * 2];
+          const py = pPositions[i * 2 + 1];
+
+          const col = (px / GRID_SIZE) | 0;
+          const row = (py / GRID_SIZE) | 0;
+
+          // Search 3x3 cells
+          for (let nx = -1; nx <= 1; nx++) {
+            for (let ny = -1; ny <= 1; ny++) {
+              const cellKey = `${col + nx},${row + ny}`;
+              const neighbors = grid[cellKey];
+              if (!neighbors) continue;
+
+              for (let k = 0; k < neighbors.length; k++) {
+                const j = neighbors[k];
+                if (j <= i) continue; // Avoid duplicate connections
+
+                const qx = pPositions[j * 2];
+                const qy = pPositions[j * 2 + 1];
+
+                const dx = px - qx;
+                const dy = py - qy;
+                const distSq = dx * dx + dy * dy;
+
+                let thresholdSq = baseThresholdSq;
+                let waveBoost = 1.0;
+
+                if (idleActive) {
+                  const density = densityWave((py + qy) * 0.5, idleT);
+                  thresholdSq *= density;
+                  waveBoost = density;
+                }
+
+                if (distSq < thresholdSq) {
+                  const alpha = (1.0 - (distSq / thresholdSq)) * 0.4 * waveBoost;
+                  const idx = lineVertexCount * 2;
+                  const cIdx = lineVertexCount * 4;
+
+                  // Particle A
+                  lPositions[idx] = px;
+                  lPositions[idx + 1] = py;
+                  lColors[cIdx] = cr;
+                  lColors[cIdx + 1] = cg;
+                  lColors[cIdx + 2] = cb;
+                  lColors[cIdx + 3] = alpha;
+
+                  // Particle B
+                  lPositions[idx + 2] = qx;
+                  lPositions[idx + 3] = qy;
+                  lColors[cIdx + 4] = cr;
+                  lColors[cIdx + 5] = cg;
+                  lColors[cIdx + 6] = cb;
+                  lColors[cIdx + 7] = alpha;
+
+                  lineVertexCount += 2;
+                  if (lineVertexCount >= MAX_LINES * 2) break;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // --- GPU Drawing Pipeline ---
+      gl.clearColor(0.02, 0.02, 0.03, 1.0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+
+      // Additive blend state
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
 
-      // Render frame
-      gl.clearColor(0.02, 0.02, 0.03, 1.0);
-      gl.clear(gl.COLOR_BUFFER_BIT);
-      gl.drawArrays(gl.POINTS, 0, PARTICLE_COUNT);
+      // Draw Neural Links (Lines)
+      if (lineVertexCount > 0) {
+        gl.useProgram(lineProgram);
+        gl.uniform2f(lLoc.res, width, height);
 
-      requestAnimationFrame(render);
+        gl.bindBuffer(gl.ARRAY_BUFFER, lPosBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, lPositions.subarray(0, lineVertexCount * 2), gl.DYNAMIC_DRAW);
+        gl.enableVertexAttribArray(lLoc.pos);
+        gl.vertexAttribPointer(lLoc.pos, 2, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, lColBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, lColors.subarray(0, lineVertexCount * 4), gl.DYNAMIC_DRAW);
+        gl.enableVertexAttribArray(lLoc.col);
+        gl.vertexAttribPointer(lLoc.col, 4, gl.FLOAT, false, 0, 0);
+
+        gl.drawArrays(gl.LINES, 0, lineVertexCount);
+      }
+
+      // Draw Particles (Points)
+      gl.useProgram(particleProgram);
+      gl.uniform2f(pLoc.res, width, height);
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, pPosBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, pPositions, gl.DYNAMIC_DRAW);
+      gl.enableVertexAttribArray(pLoc.pos);
+      gl.vertexAttribPointer(pLoc.pos, 2, gl.FLOAT, false, 0, 0);
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, pColBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, pColors, gl.DYNAMIC_DRAW);
+      gl.enableVertexAttribArray(pLoc.col);
+      gl.vertexAttribPointer(pLoc.col, 4, gl.FLOAT, false, 0, 0);
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, pSizeBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, pSizes, gl.STATIC_DRAW);
+      gl.enableVertexAttribArray(pLoc.size);
+      gl.vertexAttribPointer(pLoc.size, 1, gl.FLOAT, false, 0, 0);
+
+      gl.drawArrays(gl.POINTS, 0, TOTAL_PARTICLES);
+
+      requestAnimationFrame(animate);
     }
 
-    window.addEventListener('resize', () => {
-      resize();
-    });
-
+    // Launch
     resize();
-    initParticles();
-    requestAnimationFrame(render);
+    initParticleState();
+    requestAnimationFrame(animate);
   </script>
 </body>
 </html>
