@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Neural Particle Sandbox V2.5 - WebGL GPU</title>
+  <title>Neural Particle Sandbox V2.5 - WebGL Singularity</title>
   <style>
     * {
       box-sizing: border-box;
@@ -27,6 +27,30 @@
       left: 0;
       width: 100vw;
       height: 100vh;
+    }
+
+    /* Black Hole Visual Element */
+    #black-hole-void {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 60px;
+      height: 60px;
+      transform: translate(-50%, -50%) scale(0);
+      border-radius: 50%;
+      background: radial-gradient(circle, #000 65%, #050508 100%);
+      box-shadow: 0 0 25px 8px rgba(0, 255, 204, 0.4), 
+                  0 0 60px 20px rgba(0, 255, 204, 0.15),
+                  inset 0 0 15px rgba(0, 0, 0, 0.9);
+      pointer-events: none;
+      z-index: 5;
+      opacity: 0;
+      transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1s ease;
+    }
+
+    #black-hole-void.active {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
     }
 
     /* HUD Styling */
@@ -220,6 +244,9 @@
 </head>
 <body>
 
+  <!-- Physical Black Hole Singularity DOM Overlay -->
+  <div id="black-hole-void"></div>
+
   <div id="hud">
     <div id="hud-header">
       <h1>System Core <span style="font-size:0.7em; opacity:0.5">v2.5 GL</span></h1>
@@ -237,6 +264,10 @@
           <span id="fps-display">60</span>
           <span id="perf-badge" title="Auto-lightened for smoother performance" style="display:none; margin-left:6px; color:#050505; background:#00ffcc; border-radius:3px; padding:1px 5px; font-size:0.6rem; letter-spacing:0.5px;">LITE</span>
         </span>
+      </div>
+      <div class="stat-row">
+        <span>Singularity</span>
+        <span class="stat-val" id="singularity-status" style="color:#888;">STANDBY</span>
       </div>
 
       <div class="control-group">
@@ -281,7 +312,7 @@
         [2-Finger / R-Click] Repulsion Field<br>
         [L+R Held] Full Chaos Burst<br>
         [Double-Tap / Click] Shockwave<br>
-        [Idle &gt; 4.5s] Rotating Triangle + Black Hole<br>
+        [Idle &gt; 4.5s] Black Hole + Rotating Triangle<br>
         [Drag Header] Reposition Deck
       </div>
     </div>
@@ -301,6 +332,8 @@
     const uiCount = document.getElementById('count-display');
     const uiFps = document.getElementById('fps-display');
     const uiPerfBadge = document.getElementById('perf-badge');
+    const uiSingularity = document.getElementById('singularity-status');
+    const blackHoleVoid = document.getElementById('black-hole-void');
     const inputDist = document.getElementById('connect-dist');
     const inputSpeed = document.getElementById('speed-mult');
     const hud = document.getElementById('hud');
@@ -319,7 +352,7 @@
 
     // Scaled-up particle counts
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768;
-    const TOTAL_PARTICLES = isMobile ? 2400 : 5000;
+    const TOTAL_PARTICLES = isMobile ? 2500 : 5000;
 
     const config = {
       count: TOTAL_PARTICLES,
@@ -336,11 +369,11 @@
     let dpr = 1.0;
 
     const colorSchemes = {
-      cyan:    { hueMin: 160, hueRange: 60,  sat: 1.0, rgb: [0.0, 1.0, 0.8] },
-      fire:    { hueMin: 0,   hueRange: 45,  sat: 1.0, rgb: [1.0, 0.47, 0.0] },
-      magenta: { hueMin: 280, hueRange: 50,  sat: 1.0, rgb: [0.86, 0.0, 1.0] },
-      rainbow: { hueMin: 0,   hueRange: 360, sat: 1.0, rgb: [1.0, 1.0, 1.0] },
-      mono:    { hueMin: 0,   hueRange: 0,   sat: 0.0, rgb: [1.0, 1.0, 1.0] }
+      cyan:    { hueMin: 160, hueRange: 60,  sat: 1.0, rgb: [0.0, 1.0, 0.8], glow: 'rgba(0, 255, 204, 0.5)' },
+      fire:    { hueMin: 0,   hueRange: 45,  sat: 1.0, rgb: [1.0, 0.47, 0.0], glow: 'rgba(255, 120, 0, 0.5)' },
+      magenta: { hueMin: 280, hueRange: 50,  sat: 1.0, rgb: [0.86, 0.0, 1.0], glow: 'rgba(220, 0, 255, 0.5)' },
+      rainbow: { hueMin: 0,   hueRange: 360, sat: 1.0, rgb: [1.0, 1.0, 1.0], glow: 'rgba(255, 255, 255, 0.5)' },
+      mono:    { hueMin: 0,   hueRange: 0,   sat: 0.0, rgb: [1.0, 1.0, 1.0], glow: 'rgba(255, 255, 255, 0.5)' }
     };
 
     // --- WebGL Shaders ---
@@ -437,7 +470,7 @@
     const pHues = new Float32Array(TOTAL_PARTICLES);
     const pBaseHues = new Float32Array(TOTAL_PARTICLES);
     const pIdleSlots = new Float32Array(TOTAL_PARTICLES);
-    const pLayers = new Uint8Array(TOTAL_PARTICLES);
+    const pRoles = new Uint8Array(TOTAL_PARTICLES); // 0 = accreting black hole vortex, 1 = rotating triangle boundary
 
     const MAX_LINES = 16000;
     const lPositions = new Float32Array(MAX_LINES * 4);
@@ -502,14 +535,17 @@
         pColors[i4 + 3] = 0.9;
 
         pSizes[i] = (Math.random() * 2.2 + 1.6) * dpr;
-        pIdleSlots[i] = i / TOTAL_PARTICLES;
-        pLayers[i] = i % 3; // 3 concentric triangle edge shells
+        pIdleSlots[i] = Math.random();
+        // 55% of particles form the rotating triangle perimeter, 45% fall into the vortex
+        pRoles[i] = (i % 100 < 55) ? 1 : 0;
       }
       uiCount.innerText = TOTAL_PARTICLES.toLocaleString();
     }
 
     function updateColorScheme() {
       const scheme = colorSchemes[config.colorScheme];
+      blackHoleVoid.style.boxShadow = `0 0 25px 8px ${scheme.glow}, 0 0 60px 20px rgba(255,255,255,0.1), inset 0 0 15px rgba(0,0,0,0.9)`;
+
       for (let i = 0; i < TOTAL_PARTICLES; i++) {
         const hue = scheme.hueMin + Math.random() * scheme.hueRange;
         pBaseHues[i] = hue;
@@ -524,50 +560,45 @@
 
     // --- Idle Rotating Triangle & Black Hole Mechanics ---
     let lastInteraction = performance.now();
-    const IDLE_THRESHOLD = 4500;
+    const IDLE_THRESHOLD = 4500; // 4.5 seconds
     let idleT = 0;
 
-    function getRotatingTriangleTarget(slotNorm, layer, idleTime) {
+    function getRotatingTriangleTarget(slotNorm, idleTime) {
       const cx = width / 2;
       const cy = height / 2;
 
-      // Base radius & concentric shells
-      const baseRadius = Math.min(width, height) * 0.36;
-      const layerScale = 1.0 - (layer * 0.18);
-      const breathe = 1.0 + Math.sin(idleTime * 0.002 + layer) * 0.04;
-      const R = baseRadius * layerScale * breathe;
+      // Triangle size & slow rotation
+      const baseRadius = Math.min(width, height) * 0.40;
+      const rot = idleTime * 0.0006;
 
-      // Triangle rotation
-      const rot = idleTime * 0.00045 * (layer % 2 === 0 ? 1 : -1);
+      // Vertices of an equilateral triangle
+      const a0 = rot - Math.PI / 2;
+      const a1 = a0 + (Math.PI * 2) / 3;
+      const a2 = a0 + (Math.PI * 4) / 3;
 
-      // 3 Vertices of an equilateral triangle
-      const angle0 = rot - Math.PI / 2;
-      const angle1 = angle0 + (Math.PI * 2) / 3;
-      const angle2 = angle0 + (Math.PI * 4) / 3;
+      const v0x = cx + Math.cos(a0) * baseRadius, v0y = cy + Math.sin(a0) * baseRadius;
+      const v1x = cx + Math.cos(a1) * baseRadius, v1y = cy + Math.sin(a1) * baseRadius;
+      const v2x = cx + Math.cos(a2) * baseRadius, v2y = cy + Math.sin(a2) * baseRadius;
 
-      const v0x = cx + Math.cos(angle0) * R, v0y = cy + Math.sin(angle0) * R;
-      const v1x = cx + Math.cos(angle1) * R, v1y = cy + Math.sin(angle1) * R;
-      const v2x = cx + Math.cos(angle2) * R, v2y = cy + Math.sin(angle2) * R;
-
-      // Map progress [0, 1] continuously along the 3 perimeter edges
-      const pos = (slotNorm * 3 + idleTime * 0.00015) % 3;
+      // Progress around the 3 edges
+      const edgeProgress = (slotNorm * 3 + idleTime * 0.0003) % 3;
       let tx, ty;
 
-      if (pos < 1.0) {
-        const t = pos;
+      if (edgeProgress < 1.0) {
+        const t = edgeProgress;
         tx = v0x + (v1x - v0x) * t;
         ty = v0y + (v1y - v0y) * t;
-      } else if (pos < 2.0) {
-        const t = pos - 1.0;
+      } else if (edgeProgress < 2.0) {
+        const t = edgeProgress - 1.0;
         tx = v1x + (v2x - v1x) * t;
         ty = v1y + (v2y - v1y) * t;
       } else {
-        const t = pos - 2.0;
+        const t = edgeProgress - 2.0;
         tx = v2x + (v0x - v2x) * t;
         ty = v2y + (v0y - v2y) * t;
       }
 
-      return { x: tx, y: ty };
+      return { x: tx, y: ty, rot };
     }
 
     // Touch & Pointer State Tracker
@@ -591,7 +622,7 @@
       }
     }
 
-    // Mobile Multi-touch
+    // Touch Events
     window.addEventListener('touchstart', e => {
       if (e.target.closest('#hud')) return;
       lastInteraction = performance.now();
@@ -850,9 +881,20 @@
       const cx = width / 2;
       const cy = height / 2;
       const blackHoleActive = idleT > 0 && !pointer.active && !comboActive;
-      const idleRamp = blackHoleActive ? Math.min(idleT / 2500, 1.0) : 0;
+      const idleRamp = blackHoleActive ? Math.min(idleT / 2000, 1.0) : 0;
 
-      // Physics and Particle Updates
+      // Toggle Singularity Visuals
+      if (blackHoleActive) {
+        blackHoleVoid.classList.add('active');
+        uiSingularity.innerText = 'ACTIVE';
+        uiSingularity.style.color = '#00ffcc';
+      } else {
+        blackHoleVoid.classList.remove('active');
+        uiSingularity.innerText = 'STANDBY';
+        uiSingularity.style.color = '#888';
+      }
+
+      // Physics & Particle Updates
       for (let i = 0; i < TOTAL_PARTICLES; i++) {
         const i2 = i * 2;
         const i4 = i * 4;
@@ -903,31 +945,51 @@
           const dyCenter = cy - pPositions[i2 + 1];
           const distCenter = Math.sqrt(dxCenter * dxCenter + dyCenter * dyCenter) || 1;
 
-          // Event Horizon Threshold (~35px)
-          if (distCenter < 35) {
-            // Relativistic Jet: Eject particles along triangle vertex angles
-            const angle = (idleT * 0.00045 - Math.PI / 2) + (pLayers[i] * (Math.PI * 2) / 3);
-            const ejectSpeed = 10 + Math.random() * 12;
-            pVelocities[i2] = Math.cos(angle) * ejectSpeed;
-            pVelocities[i2 + 1] = Math.sin(angle) * ejectSpeed;
-            pHues[i] = pBaseHues[i] + 180; // Event horizon thermal flash
+          if (pRoles[i] === 0) {
+            // === ACCRETION DISK & BLACK HOLE VORTEX ===
+            if (distCenter < 28) {
+              // Crossed the Event Horizon: Consume & Eject along Triangle Vertices
+              const triangleInfo = getRotatingTriangleTarget(pIdleSlots[i], idleT);
+              const vertexIndex = Math.floor(Math.random() * 3);
+              const vertexAngle = triangleInfo.rot - Math.PI / 2 + (vertexIndex * (Math.PI * 2) / 3);
+              const ejectSpeed = 14 + Math.random() * 8;
+
+              // Teleport to the boundary of the void
+              pPositions[i2] = cx + Math.cos(vertexAngle) * 32;
+              pPositions[i2 + 1] = cy + Math.sin(vertexAngle) * 32;
+
+              pVelocities[i2] = Math.cos(vertexAngle) * ejectSpeed;
+              pVelocities[i2 + 1] = Math.sin(vertexAngle) * ejectSpeed;
+
+              pHues[i] = pBaseHues[i] + 160; // Superheated relativistic flash
+            } else {
+              // Violent gravitational suction (inverse distance force)
+              const pull = (450 / distCenter) * idleRamp * 0.08;
+              // Perpendicular tangential swirl force
+              const tangentX = -dyCenter / distCenter;
+              const tangentY = dxCenter / distCenter;
+              const swirl = Math.min(180 / distCenter, 8.0) * idleRamp * 0.35;
+
+              pVelocities[i2] += (dxCenter / distCenter) * pull + tangentX * swirl;
+              pVelocities[i2 + 1] += (dyCenter / distCenter) * pull + tangentY * swirl;
+
+              // Color excitement near the accretion edge
+              if (distCenter < 120) {
+                pHues[i] = pBaseHues[i] + (120 - distCenter);
+              }
+            }
           } else {
-            // Accretion Disk Swirl (Centripetal pull + Tangential vortex force)
-            const vortexAngle = Math.atan2(dyCenter, dxCenter) + Math.PI / 2;
-            const vortexForce = (120 / distCenter) * idleRamp * 0.45;
-            const inwardPull = (160 / (distCenter + 40)) * idleRamp * 0.25;
-
-            pVelocities[i2] += Math.cos(vortexAngle) * vortexForce + (dxCenter / distCenter) * inwardPull;
-            pVelocities[i2 + 1] += Math.sin(vortexAngle) * vortexForce + (dyCenter / distCenter) * inwardPull;
-
-            // Rotating Triangle Perimeter Guidance
-            const target = getRotatingTriangleTarget(pIdleSlots[i], pLayers[i], idleT);
+            // === ROTATING EQUILATERAL TRIANGLE BOUNDARY ===
+            const target = getRotatingTriangleTarget(pIdleSlots[i], idleT);
             const dxTarget = target.x - pPositions[i2];
             const dyTarget = target.y - pPositions[i2 + 1];
-            const pullStrength = idleRamp * 0.024;
 
-            pVelocities[i2] += dxTarget * pullStrength;
-            pVelocities[i2 + 1] += dyTarget * pullStrength;
+            pVelocities[i2] += dxTarget * idleRamp * 0.035;
+            pVelocities[i2 + 1] += dyTarget * idleRamp * 0.035;
+
+            // Slight inward gravitational leakage so triangle isn't static
+            pVelocities[i2] += (dxCenter / distCenter) * 0.02 * idleRamp;
+            pVelocities[i2 + 1] += (dyCenter / distCenter) * 0.02 * idleRamp;
           }
         }
 
@@ -940,11 +1002,13 @@
           pColors[i4 + 2] = b;
         }
 
-        // Toroidal Wrap
-        if (pPositions[i2] < 0) pPositions[i2] = width;
-        if (pPositions[i2] > width) pPositions[i2] = 0;
-        if (pPositions[i2 + 1] < 0) pPositions[i2 + 1] = height;
-        if (pPositions[i2 + 1] > height) pPositions[i2 + 1] = 0;
+        // Toroidal Wrap (Disabled when falling into singularity to avoid boundary flicker)
+        if (!blackHoleActive || pRoles[i] === 1) {
+          if (pPositions[i2] < 0) pPositions[i2] = width;
+          if (pPositions[i2] > width) pPositions[i2] = 0;
+          if (pPositions[i2 + 1] < 0) pPositions[i2 + 1] = height;
+          if (pPositions[i2 + 1] > height) pPositions[i2 + 1] = 0;
+        }
 
         addToGrid(i, pPositions[i2], pPositions[i2 + 1]);
       }
