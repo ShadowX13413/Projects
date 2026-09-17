@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Neural Particle Sandbox V2.5 - WebGL Singularity</title>
+  <title>Neural Particle Sandbox V2.5 - Singularity Triangle</title>
   <style>
     * {
       box-sizing: border-box;
@@ -29,26 +29,26 @@
       height: 100vh;
     }
 
-    /* Black Hole Visual Element */
-    #black-hole-void {
+    /* Core Singularity Eye */
+    #black-hole-singularity {
       position: absolute;
       top: 50%;
       left: 50%;
-      width: 60px;
-      height: 60px;
+      width: 48px;
+      height: 48px;
       transform: translate(-50%, -50%) scale(0);
       border-radius: 50%;
-      background: radial-gradient(circle, #000 65%, #050508 100%);
-      box-shadow: 0 0 25px 8px rgba(0, 255, 204, 0.4), 
-                  0 0 60px 20px rgba(0, 255, 204, 0.15),
-                  inset 0 0 15px rgba(0, 0, 0, 0.9);
+      background: radial-gradient(circle, #000 60%, #080811 100%);
+      box-shadow: 0 0 35px 10px rgba(0, 255, 204, 0.6), 
+                  0 0 70px 25px rgba(0, 255, 204, 0.2),
+                  inset 0 0 15px rgba(0, 0, 0, 1);
       pointer-events: none;
       z-index: 5;
       opacity: 0;
-      transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1s ease;
+      transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.8s ease;
     }
 
-    #black-hole-void.active {
+    #black-hole-singularity.active {
       transform: translate(-50%, -50%) scale(1);
       opacity: 1;
     }
@@ -244,8 +244,8 @@
 </head>
 <body>
 
-  <!-- Physical Black Hole Singularity DOM Overlay -->
-  <div id="black-hole-void"></div>
+  <!-- Physical Singularity Void in Dead Center -->
+  <div id="black-hole-singularity"></div>
 
   <div id="hud">
     <div id="hud-header">
@@ -255,7 +255,7 @@
 
     <div id="hud-body">
       <div class="stat-row">
-        <span>Active Particles</span>
+        <span>Particles</span>
         <span class="stat-val" id="count-display">0</span>
       </div>
       <div class="stat-row">
@@ -312,8 +312,8 @@
         [2-Finger / R-Click] Repulsion Field<br>
         [L+R Held] Full Chaos Burst<br>
         [Double-Tap / Click] Shockwave<br>
-        [Idle &gt; 4.5s] Black Hole + Rotating Triangle<br>
-        [Drag Header] Reposition Deck
+        [Idle &gt; 4.5s] Black Hole Consumes All into Triangle<br>
+        [Drag Header] Move Deck
       </div>
     </div>
   </div>
@@ -324,21 +324,19 @@
     const canvas = document.getElementById('canvas');
     const gl = canvas.getContext('webgl', { powerPreference: 'high-performance', alpha: false, antialias: false });
 
-    if (!gl) {
-      alert('WebGL is not supported on this browser or device.');
-    }
+    if (!gl) alert('WebGL is not supported on this device.');
 
-    // UI Elements
     const uiCount = document.getElementById('count-display');
     const uiFps = document.getElementById('fps-display');
     const uiPerfBadge = document.getElementById('perf-badge');
     const uiSingularity = document.getElementById('singularity-status');
-    const blackHoleVoid = document.getElementById('black-hole-void');
+    const blackHoleElement = document.getElementById('black-hole-singularity');
     const inputDist = document.getElementById('connect-dist');
     const inputSpeed = document.getElementById('speed-mult');
     const hud = document.getElementById('hud');
     const hudHeader = document.getElementById('hud-header');
     const minimizeBtn = document.getElementById('minimize-btn');
+
     const btns = {
       neural: document.getElementById('btn-neural'),
       swarm: document.getElementById('btn-swarm'),
@@ -350,7 +348,6 @@
       off: document.getElementById('btn-perf-off')
     };
 
-    // Scaled-up particle counts
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768;
     const TOTAL_PARTICLES = isMobile ? 2500 : 5000;
 
@@ -369,21 +366,20 @@
     let dpr = 1.0;
 
     const colorSchemes = {
-      cyan:    { hueMin: 160, hueRange: 60,  sat: 1.0, rgb: [0.0, 1.0, 0.8], glow: 'rgba(0, 255, 204, 0.5)' },
-      fire:    { hueMin: 0,   hueRange: 45,  sat: 1.0, rgb: [1.0, 0.47, 0.0], glow: 'rgba(255, 120, 0, 0.5)' },
-      magenta: { hueMin: 280, hueRange: 50,  sat: 1.0, rgb: [0.86, 0.0, 1.0], glow: 'rgba(220, 0, 255, 0.5)' },
-      rainbow: { hueMin: 0,   hueRange: 360, sat: 1.0, rgb: [1.0, 1.0, 1.0], glow: 'rgba(255, 255, 255, 0.5)' },
-      mono:    { hueMin: 0,   hueRange: 0,   sat: 0.0, rgb: [1.0, 1.0, 1.0], glow: 'rgba(255, 255, 255, 0.5)' }
+      cyan:    { hueMin: 160, hueRange: 60,  sat: 1.0, rgb: [0.0, 1.0, 0.8], glow: 'rgba(0, 255, 204, 0.6)' },
+      fire:    { hueMin: 0,   hueRange: 45,  sat: 1.0, rgb: [1.0, 0.47, 0.0], glow: 'rgba(255, 120, 0, 0.6)' },
+      magenta: { hueMin: 280, hueRange: 50,  sat: 1.0, rgb: [0.86, 0.0, 1.0], glow: 'rgba(220, 0, 255, 0.6)' },
+      rainbow: { hueMin: 0,   hueRange: 360, sat: 1.0, rgb: [1.0, 1.0, 1.0], glow: 'rgba(255, 255, 255, 0.6)' },
+      mono:    { hueMin: 0,   hueRange: 0,   sat: 0.0, rgb: [1.0, 1.0, 1.0], glow: 'rgba(255, 255, 255, 0.6)' }
     };
 
-    // --- WebGL Shaders ---
+    // Shaders
     const vsParticle = `
       attribute vec2 a_position;
       attribute vec4 a_color;
       attribute float a_size;
       uniform vec2 u_resolution;
       varying vec4 v_color;
-
       void main() {
         vec2 zeroToOne = a_position / u_resolution;
         vec2 clipSpace = (zeroToOne * 2.0 - 1.0) * vec2(1.0, -1.0);
@@ -396,7 +392,6 @@
     const fsParticle = `
       precision mediump float;
       varying vec4 v_color;
-
       void main() {
         vec2 coord = gl_PointCoord - vec2(0.5);
         if (length(coord) > 0.5) discard;
@@ -409,7 +404,6 @@
       attribute vec4 a_color;
       uniform vec2 u_resolution;
       varying vec4 v_color;
-
       void main() {
         vec2 zeroToOne = a_position / u_resolution;
         vec2 clipSpace = (zeroToOne * 2.0 - 1.0) * vec2(1.0, -1.0);
@@ -421,10 +415,7 @@
     const fsLine = `
       precision mediump float;
       varying vec4 v_color;
-
-      void main() {
-        gl_FragColor = v_color;
-      }
+      void main() { gl_FragColor = v_color; }
     `;
 
     function buildProgram(vsSrc, fsSrc) {
@@ -470,13 +461,11 @@
     const pHues = new Float32Array(TOTAL_PARTICLES);
     const pBaseHues = new Float32Array(TOTAL_PARTICLES);
     const pIdleSlots = new Float32Array(TOTAL_PARTICLES);
-    const pRoles = new Uint8Array(TOTAL_PARTICLES); // 0 = accreting black hole vortex, 1 = rotating triangle boundary
 
     const MAX_LINES = 16000;
     const lPositions = new Float32Array(MAX_LINES * 4);
     const lColors = new Float32Array(MAX_LINES * 8);
 
-    // Spatial Hash Grid
     const GRID_SIZE = 100;
     let grid = {};
     function clearGrid() { grid = {}; }
@@ -535,16 +524,14 @@
         pColors[i4 + 3] = 0.9;
 
         pSizes[i] = (Math.random() * 2.2 + 1.6) * dpr;
-        pIdleSlots[i] = Math.random();
-        // 55% of particles form the rotating triangle perimeter, 45% fall into the vortex
-        pRoles[i] = (i % 100 < 55) ? 1 : 0;
+        pIdleSlots[i] = i / TOTAL_PARTICLES;
       }
       uiCount.innerText = TOTAL_PARTICLES.toLocaleString();
     }
 
     function updateColorScheme() {
       const scheme = colorSchemes[config.colorScheme];
-      blackHoleVoid.style.boxShadow = `0 0 25px 8px ${scheme.glow}, 0 0 60px 20px rgba(255,255,255,0.1), inset 0 0 15px rgba(0,0,0,0.9)`;
+      blackHoleElement.style.boxShadow = `0 0 35px 10px ${scheme.glow}, 0 0 70px 25px rgba(255,255,255,0.1), inset 0 0 15px rgba(0,0,0,1)`;
 
       for (let i = 0; i < TOTAL_PARTICLES; i++) {
         const hue = scheme.hueMin + Math.random() * scheme.hueRange;
@@ -558,20 +545,19 @@
       }
     }
 
-    // --- Idle Rotating Triangle & Black Hole Mechanics ---
+    // --- Idle Rotating Triangle Parametric Target ---
     let lastInteraction = performance.now();
     const IDLE_THRESHOLD = 4500; // 4.5 seconds
     let idleT = 0;
 
-    function getRotatingTriangleTarget(slotNorm, idleTime) {
+    function getTriangleTarget(slotNorm, idleTime) {
       const cx = width / 2;
       const cy = height / 2;
 
-      // Triangle size & slow rotation
-      const baseRadius = Math.min(width, height) * 0.40;
-      const rot = idleTime * 0.0006;
+      // Equilateral triangle side geometry
+      const baseRadius = Math.min(width, height) * 0.38;
+      const rot = idleTime * 0.00065; // rotation speed
 
-      // Vertices of an equilateral triangle
       const a0 = rot - Math.PI / 2;
       const a1 = a0 + (Math.PI * 2) / 3;
       const a2 = a0 + (Math.PI * 4) / 3;
@@ -580,28 +566,27 @@
       const v1x = cx + Math.cos(a1) * baseRadius, v1y = cy + Math.sin(a1) * baseRadius;
       const v2x = cx + Math.cos(a2) * baseRadius, v2y = cy + Math.sin(a2) * baseRadius;
 
-      // Progress around the 3 edges
-      const edgeProgress = (slotNorm * 3 + idleTime * 0.0003) % 3;
+      // Wrap progress smoothly across the 3 edges
+      const edge = (slotNorm * 3 + idleTime * 0.0002) % 3;
       let tx, ty;
 
-      if (edgeProgress < 1.0) {
-        const t = edgeProgress;
-        tx = v0x + (v1x - v0x) * t;
-        ty = v0y + (v1y - v0y) * t;
-      } else if (edgeProgress < 2.0) {
-        const t = edgeProgress - 1.0;
+      if (edge < 1.0) {
+        tx = v0x + (v1x - v0x) * edge;
+        ty = v0y + (v1y - v0y) * edge;
+      } else if (edge < 2.0) {
+        const t = edge - 1.0;
         tx = v1x + (v2x - v1x) * t;
         ty = v1y + (v2y - v1y) * t;
       } else {
-        const t = edgeProgress - 2.0;
+        const t = edge - 2.0;
         tx = v2x + (v0x - v2x) * t;
         ty = v2y + (v0y - v2y) * t;
       }
 
-      return { x: tx, y: ty, rot };
+      return { x: tx, y: ty };
     }
 
-    // Touch & Pointer State Tracker
+    // Pointer Tracker
     const pointer = {
       x: -1000,
       y: -1000,
@@ -622,7 +607,7 @@
       }
     }
 
-    // Touch Events
+    // Touch
     window.addEventListener('touchstart', e => {
       if (e.target.closest('#hud')) return;
       lastInteraction = performance.now();
@@ -656,9 +641,7 @@
     window.addEventListener('touchend', e => {
       if (e.target.closest('#hud')) return;
       lastInteraction = performance.now();
-      if (e.touches.length === 0) {
-        pointer.active = false;
-      }
+      if (e.touches.length === 0) pointer.active = false;
 
       const now = performance.now();
       if (now - lastTapTime < 300 && e.changedTouches.length > 0) {
@@ -667,7 +650,7 @@
       lastTapTime = now;
     }, { passive: true });
 
-    // Desktop Pointer Events
+    // Desktop
     window.addEventListener('mousemove', e => {
       pointer.x = e.clientX;
       pointer.y = e.clientY;
@@ -709,8 +692,8 @@
         const dx = pPositions[i2] - originX;
         const dy = pPositions[i2 + 1] - originY;
         const angle = Math.atan2(dy, dx);
-        pVelocities[i2] += Math.cos(angle) * 32;
-        pVelocities[i2 + 1] += Math.sin(angle) * 32;
+        pVelocities[i2] += Math.cos(angle) * 34;
+        pVelocities[i2 + 1] += Math.sin(angle) * 34;
         pHues[i] = 50;
       }
     }
@@ -802,15 +785,8 @@
       config.perfMode = mode;
       Object.values(perfBtns).forEach(b => b.classList.remove('active'));
       perfBtns[mode].classList.add('active');
-
-      if (mode === 'on') {
-        perfActive = true;
-      } else if (mode === 'off') {
-        perfActive = false;
-      } else {
-        perfActive = false;
-        fpsHistory = [];
-      }
+      perfActive = (mode === 'on');
+      if (mode === 'auto') fpsHistory = [];
       updatePerfBadge();
     };
 
@@ -852,7 +828,7 @@
       initParticleState();
     });
 
-    // --- Main Simulation Loop ---
+    // --- Core Animation Frame Loop ---
     let lastTime = performance.now();
     let frameCount = 0;
 
@@ -881,20 +857,21 @@
       const cx = width / 2;
       const cy = height / 2;
       const blackHoleActive = idleT > 0 && !pointer.active && !comboActive;
-      const idleRamp = blackHoleActive ? Math.min(idleT / 2000, 1.0) : 0;
+      // Smooth 0 -> 1 ramp over 2.5s once idle starts
+      const idleRamp = blackHoleActive ? Math.min(idleT / 2500, 1.0) : 0;
 
-      // Toggle Singularity Visuals
+      // Singularity Display Update
       if (blackHoleActive) {
-        blackHoleVoid.classList.add('active');
-        uiSingularity.innerText = 'ACTIVE';
+        blackHoleElement.classList.add('active');
+        uiSingularity.innerText = 'EVENT HORIZON';
         uiSingularity.style.color = '#00ffcc';
       } else {
-        blackHoleVoid.classList.remove('active');
+        blackHoleElement.classList.remove('active');
         uiSingularity.innerText = 'STANDBY';
         uiSingularity.style.color = '#888';
       }
 
-      // Physics & Particle Updates
+      // Physics Loop
       for (let i = 0; i < TOTAL_PARTICLES; i++) {
         const i2 = i * 2;
         const i4 = i * 4;
@@ -905,7 +882,7 @@
         pVelocities[i2] *= friction;
         pVelocities[i2 + 1] *= friction;
 
-        // Pointer Interactive Dynamics
+        // Pointer Gravity / Repel
         if (pointer.active) {
           const dx = pointer.x - pPositions[i2];
           const dy = pointer.y - pPositions[i2 + 1];
@@ -922,7 +899,7 @@
           }
         }
 
-        // Combo Chaos Burst
+        // Combo Chaos
         if (comboActive) {
           const dx = pPositions[i2] - pointer.x;
           const dy = pPositions[i2 + 1] - pointer.y;
@@ -933,67 +910,53 @@
           pHues[i] = (pHues[i] + 25) % 360;
         }
 
-        // Chaos Brownian Jitter
         if (isChaos) {
           pVelocities[i2] += (Math.random() - 0.5) * 0.28;
           pVelocities[i2 + 1] += (Math.random() - 0.5) * 0.28;
         }
 
-        // --- Black Hole Singularity + Rotating Triangle Mechanics ---
+        // =======================================================
+        // GLOBAL BLACK HOLE GRAVITATIONAL CAPTURE & ROTATING TRIANGLE
+        // =======================================================
         if (blackHoleActive) {
           const dxCenter = cx - pPositions[i2];
           const dyCenter = cy - pPositions[i2 + 1];
           const distCenter = Math.sqrt(dxCenter * dxCenter + dyCenter * dyCenter) || 1;
 
-          if (pRoles[i] === 0) {
-            // === ACCRETION DISK & BLACK HOLE VORTEX ===
-            if (distCenter < 28) {
-              // Crossed the Event Horizon: Consume & Eject along Triangle Vertices
-              const triangleInfo = getRotatingTriangleTarget(pIdleSlots[i], idleT);
-              const vertexIndex = Math.floor(Math.random() * 3);
-              const vertexAngle = triangleInfo.rot - Math.PI / 2 + (vertexIndex * (Math.PI * 2) / 3);
-              const ejectSpeed = 14 + Math.random() * 8;
+          // 1. Universal Infinite-Range Suction (Pulls all particles across the entire viewport)
+          const universalPull = 0.55 * idleRamp;
+          pVelocities[i2] += (dxCenter / distCenter) * universalPull;
+          pVelocities[i2 + 1] += (dyCenter / distCenter) * universalPull;
 
-              // Teleport to the boundary of the void
-              pPositions[i2] = cx + Math.cos(vertexAngle) * 32;
-              pPositions[i2 + 1] = cy + Math.sin(vertexAngle) * 32;
+          // 2. High-Velocity Accretion Swirl (Spirals particles toward the singularity)
+          const tangentX = -dyCenter / distCenter;
+          const tangentY = dxCenter / distCenter;
+          const swirlSpeed = Math.min(320 / (distCenter + 30), 6.5) * idleRamp;
 
-              pVelocities[i2] = Math.cos(vertexAngle) * ejectSpeed;
-              pVelocities[i2 + 1] = Math.sin(vertexAngle) * ejectSpeed;
+          pVelocities[i2] += tangentX * swirlSpeed;
+          pVelocities[i2 + 1] += tangentY * swirlSpeed;
 
-              pHues[i] = pBaseHues[i] + 160; // Superheated relativistic flash
-            } else {
-              // Violent gravitational suction (inverse distance force)
-              const pull = (450 / distCenter) * idleRamp * 0.08;
-              // Perpendicular tangential swirl force
-              const tangentX = -dyCenter / distCenter;
-              const tangentY = dxCenter / distCenter;
-              const swirl = Math.min(180 / distCenter, 8.0) * idleRamp * 0.35;
+          // 3. Rotating Triangle Perimeter Convergence
+          const trianglePos = getTriangleTarget(pIdleSlots[i], idleT);
+          const dxTri = trianglePos.x - pPositions[i2];
+          const dyTri = trianglePos.y - pPositions[i2 + 1];
 
-              pVelocities[i2] += (dxCenter / distCenter) * pull + tangentX * swirl;
-              pVelocities[i2 + 1] += (dyCenter / distCenter) * pull + tangentY * swirl;
+          // Firm geometric convergence to lock particles into the rotating triangle structure
+          const lockStrength = 0.055 * idleRamp;
+          pVelocities[i2] += dxTri * lockStrength;
+          pVelocities[i2 + 1] += dyTri * lockStrength;
 
-              // Color excitement near the accretion edge
-              if (distCenter < 120) {
-                pHues[i] = pBaseHues[i] + (120 - distCenter);
-              }
-            }
-          } else {
-            // === ROTATING EQUILATERAL TRIANGLE BOUNDARY ===
-            const target = getRotatingTriangleTarget(pIdleSlots[i], idleT);
-            const dxTarget = target.x - pPositions[i2];
-            const dyTarget = target.y - pPositions[i2 + 1];
-
-            pVelocities[i2] += dxTarget * idleRamp * 0.035;
-            pVelocities[i2 + 1] += dyTarget * idleRamp * 0.035;
-
-            // Slight inward gravitational leakage so triangle isn't static
-            pVelocities[i2] += (dxCenter / distCenter) * 0.02 * idleRamp;
-            pVelocities[i2 + 1] += (dyCenter / distCenter) * 0.02 * idleRamp;
+          // 4. Singularity Core Slingshot (Event Horizon at r < 24px)
+          if (distCenter < 24) {
+            // Relativistic thermal blast pushing particles back onto the triangle
+            const slingshotSpeed = 12.0;
+            pVelocities[i2] = (dxTri !== 0 ? Math.sign(dxTri) : 1) * slingshotSpeed;
+            pVelocities[i2 + 1] = (dyTri !== 0 ? Math.sign(dyTri) : 1) * slingshotSpeed;
+            pHues[i] = pBaseHues[i] + 160; // Event horizon flash
           }
         }
 
-        // Color Thermal Decay
+        // Color Decay
         if (!comboActive && pHues[i] > pBaseHues[i]) {
           pHues[i] -= 2;
           const [r, g, b] = hslToRgb(pHues[i], scheme.sat, 0.6);
@@ -1002,8 +965,8 @@
           pColors[i4 + 2] = b;
         }
 
-        // Toroidal Wrap (Disabled when falling into singularity to avoid boundary flicker)
-        if (!blackHoleActive || pRoles[i] === 1) {
+        // Toroidal Wrap (Only active during normal mode; disabled during black hole capture so edges don't break the formation)
+        if (!blackHoleActive) {
           if (pPositions[i2] < 0) pPositions[i2] = width;
           if (pPositions[i2] > width) pPositions[i2] = 0;
           if (pPositions[i2 + 1] < 0) pPositions[i2 + 1] = height;
@@ -1074,14 +1037,14 @@
         }
       }
 
-      // GPU Rendering
+      // WebGL Rendering
       gl.clearColor(0.012, 0.012, 0.02, 1.0);
       gl.clear(gl.COLOR_BUFFER_BIT);
 
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
 
-      // Draw Lines
+      // Lines
       if (lineVertexCount > 0) {
         gl.useProgram(lineProgram);
         gl.uniform2f(lLoc.res, width, height);
@@ -1099,7 +1062,7 @@
         gl.drawArrays(gl.LINES, 0, lineVertexCount);
       }
 
-      // Draw Particles
+      // Particles
       gl.useProgram(particleProgram);
       gl.uniform2f(pLoc.res, width, height);
 
