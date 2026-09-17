@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Neural Particle Sandbox V2 - WebGL GPU</title>
+  <title>Neural Particle Sandbox V2.5 - WebGL GPU</title>
   <style>
     * {
       box-sizing: border-box;
@@ -14,7 +14,7 @@
       margin: 0;
       padding: 0;
       overflow: hidden;
-      background-color: #050505;
+      background-color: #030305;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       user-select: none;
       -webkit-user-select: none;
@@ -35,20 +35,20 @@
       top: 16px;
       left: 16px;
       width: min(280px, calc(100vw - 32px));
-      background: rgba(10, 10, 14, 0.85);
+      background: rgba(8, 8, 12, 0.88);
       color: #eee;
       padding: 16px;
       border-radius: 12px;
       border: 1px solid rgba(0, 255, 204, 0.25);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.7);
       z-index: 10;
       transition: box-shadow 0.2s, max-height 0.25s ease;
     }
 
     #hud.dragging {
-      box-shadow: 0 20px 45px rgba(0,0,0,0.8);
+      box-shadow: 0 20px 45px rgba(0,0,0,0.9);
       border-color: rgba(0, 255, 204, 0.5);
     }
 
@@ -228,11 +228,11 @@
 
     <div id="hud-body">
       <div class="stat-row">
-        <span>Particles</span>
+        <span>Active Particles</span>
         <span class="stat-val" id="count-display">0</span>
       </div>
       <div class="stat-row">
-        <span>FPS</span>
+        <span>Framerate</span>
         <span class="stat-val">
           <span id="fps-display">60</span>
           <span id="perf-badge" title="Auto-lightened for smoother performance" style="display:none; margin-left:6px; color:#050505; background:#00ffcc; border-radius:3px; padding:1px 5px; font-size:0.6rem; letter-spacing:0.5px;">LITE</span>
@@ -281,7 +281,7 @@
         [2-Finger / R-Click] Repulsion Field<br>
         [L+R Held] Full Chaos Burst<br>
         [Double-Tap / Click] Shockwave<br>
-        [Idle &gt; 4.5s] Spiral Galaxy Form<br>
+        [Idle &gt; 4.5s] Rotating Triangle + Black Hole<br>
         [Drag Header] Reposition Deck
       </div>
     </div>
@@ -290,14 +290,11 @@
   <canvas id="canvas"></canvas>
 
   <script>
-    /**
-     * WebGL Shaders & GPU Pipeline
-     */
     const canvas = document.getElementById('canvas');
     const gl = canvas.getContext('webgl', { powerPreference: 'high-performance', alpha: false, antialias: false });
 
     if (!gl) {
-      alert('WebGL is not supported on this browser or hardware.');
+      alert('WebGL is not supported on this browser or device.');
     }
 
     // UI Elements
@@ -320,9 +317,9 @@
       off: document.getElementById('btn-perf-off')
     };
 
-    // Hardware & Particle Scaler (Conserves mobile thermals while staying smooth)
+    // Scaled-up particle counts
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768;
-    const TOTAL_PARTICLES = isMobile ? 1200 : 1800;
+    const TOTAL_PARTICLES = isMobile ? 2400 : 5000;
 
     const config = {
       count: TOTAL_PARTICLES,
@@ -338,7 +335,6 @@
     let width = 0, height = 0;
     let dpr = 1.0;
 
-    // Color scheme metadata
     const colorSchemes = {
       cyan:    { hueMin: 160, hueRange: 60,  sat: 1.0, rgb: [0.0, 1.0, 0.8] },
       fire:    { hueMin: 0,   hueRange: 45,  sat: 1.0, rgb: [1.0, 0.47, 0.0] },
@@ -347,13 +343,12 @@
       mono:    { hueMin: 0,   hueRange: 0,   sat: 0.0, rgb: [1.0, 1.0, 1.0] }
     };
 
-    // --- GLSL Shaders ---
+    // --- WebGL Shaders ---
     const vsParticle = `
       attribute vec2 a_position;
       attribute vec4 a_color;
       attribute float a_size;
       uniform vec2 u_resolution;
-
       varying vec4 v_color;
 
       void main() {
@@ -416,7 +411,6 @@
     const particleProgram = buildProgram(vsParticle, fsParticle);
     const lineProgram = buildProgram(vsLine, fsLine);
 
-    // Particle Program Locations
     const pLoc = {
       pos: gl.getAttribLocation(particleProgram, 'a_position'),
       col: gl.getAttribLocation(particleProgram, 'a_color'),
@@ -424,38 +418,34 @@
       res: gl.getUniformLocation(particleProgram, 'u_resolution')
     };
 
-    // Line Program Locations
     const lLoc = {
       pos: gl.getAttribLocation(lineProgram, 'a_position'),
       col: gl.getAttribLocation(lineProgram, 'a_color'),
       res: gl.getUniformLocation(lineProgram, 'u_resolution')
     };
 
-    // GPU Buffers
     const pPosBuffer = gl.createBuffer();
     const pColBuffer = gl.createBuffer();
     const pSizeBuffer = gl.createBuffer();
     const lPosBuffer = gl.createBuffer();
     const lColBuffer = gl.createBuffer();
 
-    // Fast Float Arrays for WebGL Streaming
     const pPositions = new Float32Array(TOTAL_PARTICLES * 2);
     const pColors = new Float32Array(TOTAL_PARTICLES * 4);
     const pSizes = new Float32Array(TOTAL_PARTICLES);
     const pVelocities = new Float32Array(TOTAL_PARTICLES * 2);
     const pHues = new Float32Array(TOTAL_PARTICLES);
     const pBaseHues = new Float32Array(TOTAL_PARTICLES);
-    const pIdleSlots = new Uint16Array(TOTAL_PARTICLES);
+    const pIdleSlots = new Float32Array(TOTAL_PARTICLES);
+    const pLayers = new Uint8Array(TOTAL_PARTICLES);
 
-    // Dynamic Line Buffers (Cap at 20,000 links)
-    const MAX_LINES = 20000;
+    const MAX_LINES = 16000;
     const lPositions = new Float32Array(MAX_LINES * 4);
     const lColors = new Float32Array(MAX_LINES * 8);
 
-    // --- Spatial Hash Optimization ---
+    // Spatial Hash Grid
     const GRID_SIZE = 100;
     let grid = {};
-
     function clearGrid() { grid = {}; }
     function addToGrid(idx, px, py) {
       const col = (px / GRID_SIZE) | 0;
@@ -511,8 +501,9 @@
         pColors[i4 + 2] = b;
         pColors[i4 + 3] = 0.9;
 
-        pSizes[i] = (Math.random() * 2.2 + 1.8) * dpr;
-        pIdleSlots[i] = i;
+        pSizes[i] = (Math.random() * 2.2 + 1.6) * dpr;
+        pIdleSlots[i] = i / TOTAL_PARTICLES;
+        pLayers[i] = i % 3; // 3 concentric triangle edge shells
       }
       uiCount.innerText = TOTAL_PARTICLES.toLocaleString();
     }
@@ -531,46 +522,60 @@
       }
     }
 
-    // --- Idle Formation Logic ---
+    // --- Idle Rotating Triangle & Black Hole Mechanics ---
     let lastInteraction = performance.now();
     const IDLE_THRESHOLD = 4500;
     let idleT = 0;
 
-    function getIdleTarget(slot, idleTime) {
-      const total = TOTAL_PARTICLES;
-      const arms = 5;
-      const armIndex = slot % arms;
-      const perArm = Math.ceil(total / arms);
-      const posInArm = Math.floor(slot / arms);
-      const t = perArm > 1 ? posInArm / (perArm - 1) : 0;
-
+    function getRotatingTriangleTarget(slotNorm, layer, idleTime) {
       const cx = width / 2;
       const cy = height / 2;
-      const maxRadius = Math.min(width, height) * 0.38;
 
-      const rotation = idleTime * 0.00025;
-      const breathe = 1 + Math.sin(idleTime * 0.0015 + t * 8) * 0.06;
-      const radius = t * maxRadius * breathe;
-      const angle = armIndex * ((Math.PI * 2) / arms) + t * 4.2 + rotation;
+      // Base radius & concentric shells
+      const baseRadius = Math.min(width, height) * 0.36;
+      const layerScale = 1.0 - (layer * 0.18);
+      const breathe = 1.0 + Math.sin(idleTime * 0.002 + layer) * 0.04;
+      const R = baseRadius * layerScale * breathe;
 
-      return {
-        x: cx + Math.cos(angle) * radius,
-        y: cy + Math.sin(angle) * radius
-      };
+      // Triangle rotation
+      const rot = idleTime * 0.00045 * (layer % 2 === 0 ? 1 : -1);
+
+      // 3 Vertices of an equilateral triangle
+      const angle0 = rot - Math.PI / 2;
+      const angle1 = angle0 + (Math.PI * 2) / 3;
+      const angle2 = angle0 + (Math.PI * 4) / 3;
+
+      const v0x = cx + Math.cos(angle0) * R, v0y = cy + Math.sin(angle0) * R;
+      const v1x = cx + Math.cos(angle1) * R, v1y = cy + Math.sin(angle1) * R;
+      const v2x = cx + Math.cos(angle2) * R, v2y = cy + Math.sin(angle2) * R;
+
+      // Map progress [0, 1] continuously along the 3 perimeter edges
+      const pos = (slotNorm * 3 + idleTime * 0.00015) % 3;
+      let tx, ty;
+
+      if (pos < 1.0) {
+        const t = pos;
+        tx = v0x + (v1x - v0x) * t;
+        ty = v0y + (v1y - v0y) * t;
+      } else if (pos < 2.0) {
+        const t = pos - 1.0;
+        tx = v1x + (v2x - v1x) * t;
+        ty = v1y + (v2y - v1y) * t;
+      } else {
+        const t = pos - 2.0;
+        tx = v2x + (v0x - v2x) * t;
+        ty = v2y + (v0y - v2y) * t;
+      }
+
+      return { x: tx, y: ty };
     }
 
-    function densityWave(y, idleTime) {
-      const freq = 0.006;
-      const speed = 0.0006;
-      return 0.6 + 0.4 * Math.sin(y * freq - idleTime * speed);
-    }
-
-    // --- Touch & Pointer State Tracker ---
+    // Touch & Pointer State Tracker
     const pointer = {
       x: -1000,
       y: -1000,
       active: false,
-      type: 'attract', // 'attract' | 'repel'
+      type: 'attract',
       leftDown: false,
       rightDown: false
     };
@@ -586,7 +591,7 @@
       }
     }
 
-    // Mobile Touch
+    // Mobile Multi-touch
     window.addEventListener('touchstart', e => {
       if (e.target.closest('#hud')) return;
       lastInteraction = performance.now();
@@ -624,7 +629,6 @@
         pointer.active = false;
       }
 
-      // Mobile Double Tap
       const now = performance.now();
       if (now - lastTapTime < 300 && e.changedTouches.length > 0) {
         triggerShockwave(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
@@ -632,7 +636,7 @@
       lastTapTime = now;
     }, { passive: true });
 
-    // Desktop Pointer Handlers
+    // Desktop Pointer Events
     window.addEventListener('mousemove', e => {
       pointer.x = e.clientX;
       pointer.y = e.clientY;
@@ -674,13 +678,13 @@
         const dx = pPositions[i2] - originX;
         const dy = pPositions[i2 + 1] - originY;
         const angle = Math.atan2(dy, dx);
-        pVelocities[i2] += Math.cos(angle) * 28;
-        pVelocities[i2 + 1] += Math.sin(angle) * 28;
-        pHues[i] = 50; // Yellow burst
+        pVelocities[i2] += Math.cos(angle) * 32;
+        pVelocities[i2 + 1] += Math.sin(angle) * 32;
+        pHues[i] = 50;
       }
     }
 
-    // --- HUD Controls & Dragging ---
+    // HUD Dragging
     let isDraggingHud = false;
     let dragOffset = { x: 0, y: 0 };
 
@@ -739,8 +743,8 @@
       btns[mode].classList.add('active');
 
       if (mode === 'neural') {
-        config.connectDist = 100;
-        inputDist.value = 100;
+        config.connectDist = 90;
+        inputDist.value = 90;
         config.speedMult = 0.5;
         inputSpeed.value = 0.5;
         config.friction = 0.90;
@@ -751,8 +755,8 @@
         inputSpeed.value = 1.2;
         config.friction = 0.96;
       } else if (mode === 'chaos') {
-        config.connectDist = 40;
-        inputDist.value = 40;
+        config.connectDist = 35;
+        inputDist.value = 35;
         config.speedMult = 2.0;
         inputSpeed.value = 2.0;
         config.friction = 0.98;
@@ -817,12 +821,11 @@
       initParticleState();
     });
 
-    // --- Main Render Engine ---
+    // --- Main Simulation Loop ---
     let lastTime = performance.now();
     let frameCount = 0;
 
     function animate(time) {
-      // FPS Diagnostics
       if (time - lastTime >= 1000) {
         uiFps.innerText = frameCount;
         checkPerformance(frameCount);
@@ -844,7 +847,12 @@
       const isChaos = config.mode === 'chaos';
       const scheme = colorSchemes[config.colorScheme];
 
-      // Physics & Particle Array Updates
+      const cx = width / 2;
+      const cy = height / 2;
+      const blackHoleActive = idleT > 0 && !pointer.active && !comboActive;
+      const idleRamp = blackHoleActive ? Math.min(idleT / 2500, 1.0) : 0;
+
+      // Physics and Particle Updates
       for (let i = 0; i < TOTAL_PARTICLES; i++) {
         const i2 = i * 2;
         const i4 = i * 4;
@@ -855,7 +863,7 @@
         pVelocities[i2] *= friction;
         pVelocities[i2 + 1] *= friction;
 
-        // Pointer Gravity / Repel
+        // Pointer Interactive Dynamics
         if (pointer.active) {
           const dx = pointer.x - pPositions[i2];
           const dy = pointer.y - pPositions[i2 + 1];
@@ -864,7 +872,7 @@
           if (distSq < 160000 && distSq > 4) {
             const force = (400 - Math.sqrt(distSq)) / 400;
             const angle = Math.atan2(dy, dx);
-            const dir = pointer.type === 'attract' ? 0.6 : -3.0;
+            const dir = pointer.type === 'attract' ? 0.65 : -3.2;
 
             pVelocities[i2] += Math.cos(angle) * force * dir;
             pVelocities[i2 + 1] += Math.sin(angle) * force * dir;
@@ -872,18 +880,58 @@
           }
         }
 
-        // Combo Click / Burst
+        // Combo Chaos Burst
         if (comboActive) {
           const dx = pPositions[i2] - pointer.x;
           const dy = pPositions[i2 + 1] - pointer.y;
-          const angle = Math.atan2(dy, dx) + (Math.random() - 0.5) * 1.2;
-          const kick = 6 + Math.random() * 6;
+          const angle = Math.atan2(dy, dx) + (Math.random() - 0.5) * 1.4;
+          const kick = 7 + Math.random() * 7;
           pVelocities[i2] += Math.cos(angle) * kick;
           pVelocities[i2 + 1] += Math.sin(angle) * kick;
           pHues[i] = (pHues[i] + 25) % 360;
         }
 
-        // Color thermal decay
+        // Chaos Brownian Jitter
+        if (isChaos) {
+          pVelocities[i2] += (Math.random() - 0.5) * 0.28;
+          pVelocities[i2 + 1] += (Math.random() - 0.5) * 0.28;
+        }
+
+        // --- Black Hole Singularity + Rotating Triangle Mechanics ---
+        if (blackHoleActive) {
+          const dxCenter = cx - pPositions[i2];
+          const dyCenter = cy - pPositions[i2 + 1];
+          const distCenter = Math.sqrt(dxCenter * dxCenter + dyCenter * dyCenter) || 1;
+
+          // Event Horizon Threshold (~35px)
+          if (distCenter < 35) {
+            // Relativistic Jet: Eject particles along triangle vertex angles
+            const angle = (idleT * 0.00045 - Math.PI / 2) + (pLayers[i] * (Math.PI * 2) / 3);
+            const ejectSpeed = 10 + Math.random() * 12;
+            pVelocities[i2] = Math.cos(angle) * ejectSpeed;
+            pVelocities[i2 + 1] = Math.sin(angle) * ejectSpeed;
+            pHues[i] = pBaseHues[i] + 180; // Event horizon thermal flash
+          } else {
+            // Accretion Disk Swirl (Centripetal pull + Tangential vortex force)
+            const vortexAngle = Math.atan2(dyCenter, dxCenter) + Math.PI / 2;
+            const vortexForce = (120 / distCenter) * idleRamp * 0.45;
+            const inwardPull = (160 / (distCenter + 40)) * idleRamp * 0.25;
+
+            pVelocities[i2] += Math.cos(vortexAngle) * vortexForce + (dxCenter / distCenter) * inwardPull;
+            pVelocities[i2 + 1] += Math.sin(vortexAngle) * vortexForce + (dyCenter / distCenter) * inwardPull;
+
+            // Rotating Triangle Perimeter Guidance
+            const target = getRotatingTriangleTarget(pIdleSlots[i], pLayers[i], idleT);
+            const dxTarget = target.x - pPositions[i2];
+            const dyTarget = target.y - pPositions[i2 + 1];
+            const pullStrength = idleRamp * 0.024;
+
+            pVelocities[i2] += dxTarget * pullStrength;
+            pVelocities[i2 + 1] += dyTarget * pullStrength;
+          }
+        }
+
+        // Color Thermal Decay
         if (!comboActive && pHues[i] > pBaseHues[i]) {
           pHues[i] -= 2;
           const [r, g, b] = hslToRgb(pHues[i], scheme.sat, 0.6);
@@ -892,23 +940,7 @@
           pColors[i4 + 2] = b;
         }
 
-        // Chaos mode Brownian jitter
-        if (isChaos) {
-          pVelocities[i2] += (Math.random() - 0.5) * 0.25;
-          pVelocities[i2 + 1] += (Math.random() - 0.5) * 0.25;
-        }
-
-        // Idle Logarithmic Galaxy Form
-        if (idleT > 0 && !pointer.active && !comboActive) {
-          const target = getIdleTarget(pIdleSlots[i], idleT);
-          const dx = target.x - pPositions[i2];
-          const dy = target.y - pPositions[i2 + 1];
-          const pull = Math.min(idleT / 2000, 1) * 0.02;
-          pVelocities[i2] += dx * pull;
-          pVelocities[i2 + 1] += dy * pull;
-        }
-
-        // Toroidal screen boundary wrap
+        // Toroidal Wrap
         if (pPositions[i2] < 0) pPositions[i2] = width;
         if (pPositions[i2] > width) pPositions[i2] = 0;
         if (pPositions[i2 + 1] < 0) pPositions[i2 + 1] = height;
@@ -925,18 +957,15 @@
         const effDist = perfActive ? config.connectDist * 0.65 : config.connectDist;
         const baseThresholdSq = effDist * effDist;
         const [cr, cg, cb] = scheme.rgb;
-        const idleActive = idleT > 0;
 
         for (let i = 0; i < TOTAL_PARTICLES; i++) {
           if (lineVertexCount >= MAX_LINES * 2) break;
 
           const px = pPositions[i * 2];
           const py = pPositions[i * 2 + 1];
-
           const col = (px / GRID_SIZE) | 0;
           const row = (py / GRID_SIZE) | 0;
 
-          // Search 3x3 cells
           for (let nx = -1; nx <= 1; nx++) {
             for (let ny = -1; ny <= 1; ny++) {
               const cellKey = `${col + nx},${row + ny}`;
@@ -945,30 +974,19 @@
 
               for (let k = 0; k < neighbors.length; k++) {
                 const j = neighbors[k];
-                if (j <= i) continue; // Avoid duplicate connections
+                if (j <= i) continue;
 
                 const qx = pPositions[j * 2];
                 const qy = pPositions[j * 2 + 1];
-
                 const dx = px - qx;
                 const dy = py - qy;
                 const distSq = dx * dx + dy * dy;
 
-                let thresholdSq = baseThresholdSq;
-                let waveBoost = 1.0;
-
-                if (idleActive) {
-                  const density = densityWave((py + qy) * 0.5, idleT);
-                  thresholdSq *= density;
-                  waveBoost = density;
-                }
-
-                if (distSq < thresholdSq) {
-                  const alpha = (1.0 - (distSq / thresholdSq)) * 0.4 * waveBoost;
+                if (distSq < baseThresholdSq) {
+                  const alpha = (1.0 - (distSq / baseThresholdSq)) * 0.35;
                   const idx = lineVertexCount * 2;
                   const cIdx = lineVertexCount * 4;
 
-                  // Particle A
                   lPositions[idx] = px;
                   lPositions[idx + 1] = py;
                   lColors[cIdx] = cr;
@@ -976,7 +994,6 @@
                   lColors[cIdx + 2] = cb;
                   lColors[cIdx + 3] = alpha;
 
-                  // Particle B
                   lPositions[idx + 2] = qx;
                   lPositions[idx + 3] = qy;
                   lColors[cIdx + 4] = cr;
@@ -993,15 +1010,14 @@
         }
       }
 
-      // --- GPU Drawing Pipeline ---
-      gl.clearColor(0.02, 0.02, 0.03, 1.0);
+      // GPU Rendering
+      gl.clearColor(0.012, 0.012, 0.02, 1.0);
       gl.clear(gl.COLOR_BUFFER_BIT);
 
-      // Additive blend state
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
 
-      // Draw Neural Links (Lines)
+      // Draw Lines
       if (lineVertexCount > 0) {
         gl.useProgram(lineProgram);
         gl.uniform2f(lLoc.res, width, height);
@@ -1019,7 +1035,7 @@
         gl.drawArrays(gl.LINES, 0, lineVertexCount);
       }
 
-      // Draw Particles (Points)
+      // Draw Particles
       gl.useProgram(particleProgram);
       gl.uniform2f(pLoc.res, width, height);
 
@@ -1043,7 +1059,6 @@
       requestAnimationFrame(animate);
     }
 
-    // Launch
     resize();
     initParticleState();
     requestAnimationFrame(animate);
