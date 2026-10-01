@@ -13,11 +13,14 @@
             <ul>
                 <li><a href="#">Home</a></li>
                 <li><a href="#">Products</a></li>
-                <li><a href="#">Cart</a></li>
-                <li><a href="#">Contact Us</a></li>
+                <li><a href="#cart" id="cart-open">Cart</a></li>
+                <li><a href="#contact">Contact Us</a></li>
                 <li style="position: relative;">
-    🛒 <span id="cart-count">0</span>
-</li>
+    🛒 <span id="cart-count" aria-live="polite">0</span>
+                </li>
+                <li class="theme-control">
+                    <label for="theme-toggle"><input type="checkbox" id="theme-toggle"> Dark mode</label>
+                </li>
             </ul>
         </nav>
         <h1 class="txt-center">Welcome to Our E-commerce Website</h1>
@@ -116,9 +119,24 @@
             </div>
             </section>
         </main>
+        <dialog id="cart-dialog" class="cart-dialog" aria-labelledby="cart-title">
+            <div class="cart-heading">
+                <h2 id="cart-title">Your cart</h2>
+                <button type="button" class="cart-close" aria-label="Close cart">&times;</button>
+            </div>
+            <p id="cart-empty" class="cart-empty">Your cart is empty.</p>
+            <ul id="cart-items" class="cart-items"></ul>
+            <div class="cart-total"><span>Subtotal</span><strong id="cart-subtotal">$0.00</strong></div>
+            <button type="button" class="btn cart-continue">Continue shopping</button>
+        </dialog>
+        <p id="cart-notice" class="cart-notice" role="status" aria-live="polite" aria-atomic="true"></p>
         <footer>
         <div style="background-color:#333; color:#fff; text-align:center; padding:10px;">
                     <p>&copy; 2026 E-commerce Website. All rights reserved</p>
+                    <section id="contact" class="contact-section" aria-labelledby="contact-title">
+                        <h2 id="contact-title">Contact Us</h2>
+                        <a href="mailto:harshikesh13413@gmail.com">harshikesh13413@gmail.com</a>
+                    </section>
         </div>
         </footer>
         <script src="js/main.js"></script>
