@@ -261,6 +261,26 @@ footer p {
     margin: 0;
 }
 
+.contact-section {
+    margin-top: 16px;
+}
+
+.contact-section h2 {
+    margin: 0 0 6px;
+    font-family: Manrope, 'Segoe UI', sans-serif;
+    font-size: 15px;
+}
+
+.contact-section a {
+    color: var(--lime);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.contact-section a:hover {
+    text-decoration: underline;
+}
+
 @keyframes arrive {
     from { opacity: 0; transform: translateY(12px); }
     to { opacity: 1; transform: translateY(0); }
