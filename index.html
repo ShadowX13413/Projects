@@ -5,34 +5,432 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ShadowX13413 • Web Lab</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background-color: #000;
+      color: #e4e4e7;
+      overflow-x: hidden;
+      margin: 0;
+    }
+
+    /* Cosmic Gradient Text for Title */
+    .animate-cosmic-text {
+      background: linear-gradient(to right, #fef08a, #f59e0b, #d97706, #fef08a);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: gradientShift 6s linear infinite;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 200% 50%; }
+    }
+
+    /* 3D Glassmorphism Cards */
+    .glass-card {
+      position: relative;
+      background: rgba(10, 10, 10, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transform-style: preserve-3d;
+      transition: border-color 0.4s ease, box-shadow 0.4s ease, transform 0.1s ease-out;
+      overflow: hidden;
+      text-decoration: none;
+    }
+
+    /* Spotlight glare effect inside the card */
+    .glass-card::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      border-radius: inherit;
+      background: radial-gradient(
+        600px circle at var(--mouse-x) var(--mouse-y), 
+        rgba(217, 119, 6, 0.15),
+        transparent 40%
+      );
+      opacity: 0;
+      transition: opacity 0.5s;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .glass-card:hover::before {
+      opacity: 1;
+    }
+
+    .glass-card:hover {
+      border-color: rgba(217, 119, 6, 0.5); /* Amber/Copper border glow */
+      box-shadow: 0 15px 45px -10px rgba(217, 119, 6, 0.25), inset 0 0 20px rgba(217, 119, 6, 0.05);
+      z-index: 20;
+    }
+
+    /* 3D Pop Effect for Content */
+    .card-content {
+      position: relative;
+      z-index: 1;
+      transform: translateZ(30px);
+    }
+
+    /* Subtle pulse for the arrow */
+    .arrow-icon {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      opacity: 0;
+      transform: translate(-10px, 10px);
+    }
+    .glass-card:hover .arrow-icon {
+      opacity: 1;
+      transform: translate(0, 0);
+    }
+
+    /* Container for the webgl canvas */
+    #canvas-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: -2;
+      background: #000;
+    }
+    
+    /* Vignette to ensure text readability against bright areas */
+    .vignette {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: -1;
+      background: radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.8) 100%);
+      pointer-events: none;
+    }
+  </style>
 </head>
-<body class="bg-[#090a0f] text-zinc-200 min-h-screen p-8 flex flex-col items-center">
-  <header class="max-w-2xl text-center my-10">
-    <h1 class="text-4xl font-extrabold text-teal-400">Interactive Canvas Lab</h1>
-    <p class="text-zinc-400 mt-2">Zero-dependency Canvas 2D & Web Audio experiments.</p>
+
+<body class="min-h-screen p-8 flex flex-col items-center relative">
+  
+  <div id="canvas-container"></div>
+  <div class="vignette"></div>
+
+  <header class="max-w-2xl text-center my-10 relative z-10 pt-8">
+    <div class="text-xs font-bold tracking-widest text-zinc-500 uppercase mb-4">ShadowX13413 • Web Lab</div>
+    <h1 class="text-5xl md:text-6xl font-extrabold animate-cosmic-text tracking-tight drop-shadow-2xl">
+      Interactive Canvas Lab
+    </h1>
+    <p class="text-zinc-300 mt-4 text-lg font-light tracking-wide max-w-xl mx-auto drop-shadow-md">
+      Zero-dependency Canvas 2D & Web Audio experiments.
+    </p>
   </header>
 
-  <main class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl w-full">
-    <a href="Particles.html" class="p-5 rounded-xl border border-zinc-800 bg-zinc-900/60 hover:border-teal-500 transition">
-      <h2 class="font-bold text-lg text-white">Particles Sandbox →</h2>
-      <p class="text-sm text-zinc-400 mt-1">1,800-particle kinetic & neural simulation.</p>
+  <main class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl w-full relative z-10 pb-20" id="cards-container">
+    
+    <a href="#" class="glass-card p-6 rounded-xl group block link-item">
+      <div class="card-content">
+        <h2 class="font-bold text-xl text-white group-hover:text-amber-400 transition-colors flex items-center justify-between">
+          Particles Sandbox 
+          <span class="arrow-icon text-amber-500">↗</span>
+        </h2>
+        <p class="text-sm text-zinc-400 mt-2 leading-relaxed">1,800-particle kinetic & neural simulation.</p>
+      </div>
     </a>
-    <a href="Galaxy game.html" class="p-5 rounded-xl border border-zinc-800 bg-zinc-900/60 hover:border-teal-500 transition">
-      <h2 class="font-bold text-white">Galactic Interceptor →</h2>
-      <p class="text-sm text-zinc-400 mt-1">Space shooter with procedural Web Audio.</p>
+
+    <a href="#" class="glass-card p-6 rounded-xl group block link-item">
+      <div class="card-content">
+        <h2 class="font-bold text-xl text-white group-hover:text-amber-400 transition-colors flex items-center justify-between">
+          Galactic Interceptor
+          <span class="arrow-icon text-amber-500">↗</span>
+        </h2>
+        <p class="text-sm text-zinc-400 mt-2 leading-relaxed">Space shooter with procedural Web Audio.</p>
+      </div>
     </a>
-    <a href="Mario.html" class="p-5 rounded-xl border border-zinc-800 bg-zinc-900/60 hover:border-teal-500 transition">
-      <h2 class="font-bold text-white">Super Plumber Bros →</h2>
-      <p class="text-sm text-zinc-400 mt-1">NES-style retro platformer.</p>
+
+    <a href="#" class="glass-card p-6 rounded-xl group block link-item">
+      <div class="card-content">
+        <h2 class="font-bold text-xl text-white group-hover:text-amber-400 transition-colors flex items-center justify-between">
+          Super Plumber Bros
+          <span class="arrow-icon text-amber-500">↗</span>
+        </h2>
+        <p class="text-sm text-zinc-400 mt-2 leading-relaxed">NES-style retro platformer rebuilt for the web.</p>
+      </div>
     </a>
-    <a href="neuralnetworkspreview.html" class="p-5 rounded-xl border border-zinc-800 bg-zinc-900/60 hover:border-teal-500 transition">
-      <h2 class="font-bold text-white">Neural Network 101 →</h2>
-      <p class="text-sm text-zinc-400 mt-1">Interactive forward-pass visualizer.</p>
+
+    <a href="#" class="glass-card p-6 rounded-xl group block link-item">
+      <div class="card-content">
+        <h2 class="font-bold text-xl text-white group-hover:text-amber-400 transition-colors flex items-center justify-between">
+          Neural Network 101
+          <span class="arrow-icon text-amber-500">↗</span>
+        </h2>
+        <p class="text-sm text-zinc-400 mt-2 leading-relaxed">Interactive forward-pass visualizer and trainer.</p>
+      </div>
     </a>
-    <a href="E-commerceWebsite.html" class="p-5 rounded-xl border border-zinc-800 bg-zinc-900/60 hover:border-teal-500 transition">
-      <h2 class="font-bold text-white">E-Commerce UI →</h2>
-      <p class="text-sm text-zinc-400 mt-1">Catalog and cart interaction demo.</p>
+
+    <a href="#" class="glass-card p-6 rounded-xl group block sm:col-span-2 sm:w-3/4 sm:mx-auto w-full link-item">
+      <div class="card-content text-center">
+        <h2 class="font-bold text-xl text-white group-hover:text-amber-400 transition-colors inline-flex items-center gap-2">
+          E-Commerce UI
+          <span class="arrow-icon text-amber-500">↗</span>
+        </h2>
+        <p class="text-sm text-zinc-400 mt-2 leading-relaxed">High-performance catalog and cart interaction demo.</p>
+      </div>
     </a>
   </main>
+
+  <script>
+    // --- UI Interactions ---
+    const cards = document.querySelectorAll('.glass-card');
+    const links = document.querySelectorAll('.link-item');
+
+    // Prevent default on links for the demo
+    links.forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const text = link.querySelector('h2').innerText.replace(' ↗', '');
+        console.log(`Navigating to ${text}...`);
+      });
+    });
+
+    // 3D Tilt Logic
+    cards.forEach(card => {
+      card.addEventListener('mousemove', e => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        card.style.setProperty('--mouse-x', `${x}px`);
+        card.style.setProperty('--mouse-y', `${y}px`);
+
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        const maxRotate = 6; 
+
+        const rotateX = maxRotate * ((y - centerY) / centerY) * -1;
+        const rotateY = maxRotate * ((x - centerX) / centerX);
+
+        card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.03, 1.03, 1.03)`;
+      });
+
+      card.addEventListener('mouseleave', () => {
+        card.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+      });
+    });
+  </script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    // --- Interstellar Black Hole Shader Engine ---
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    // This shader uses distance fields and simulated gravitational lensing 
+    // to bend space around the black hole, rendering the accretion disk over and under.
+    const vertexShader = `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = vec4(position, 1.0);
+      }
+    `;
+
+    const fragmentShader = `
+      uniform float uTime;
+      uniform vec2 uResolution;
+      varying vec2 vUv;
+
+      // 2D Hash function for noise
+      float hash(vec2 p) {
+        return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+      }
+
+      // 2D Noise
+      float noise(vec2 p) {
+        vec2 i = floor(p);
+        vec2 f = fract(p);
+        vec2 u = f * f * (3.0 - 2.0 * f);
+        return mix(mix(hash(i + vec2(0.0, 0.0)), hash(i + vec2(1.0, 0.0)), u.x),
+                   mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+      }
+
+      // Fractional Brownian Motion for detailed dust
+      float fbm(vec2 p) {
+        float f = 0.0;
+        float amp = 0.5;
+        for(int i = 0; i < 5; i++) {
+          f += amp * noise(p);
+          p *= 2.0;
+          amp *= 0.5;
+        }
+        return f;
+      }
+
+      void main() {
+        // Normalize coordinates and center
+        vec2 uv = (vUv - 0.5) * 2.0;
+        uv.x *= uResolution.x / uResolution.y;
+
+        // Base variables
+        float time = uTime * 0.15;
+        float d = length(uv); // Distance from singularity
+        
+        // Define colors based on Interstellar palette
+        vec3 col = vec3(0.0);
+        vec3 diskColorInner = vec3(1.0, 0.95, 0.7); // Bright white/yellow
+        vec3 diskColorMid = vec3(1.0, 0.4, 0.05);   // Fiery orange/copper
+        vec3 diskColorOuter = vec3(0.2, 0.05, 0.0); // Dark brown/red dust
+
+        // Event Horizon (Schwarzschild radius)
+        float eventHorizon = 0.25;
+
+        // LENSING MATHEMATICS
+        // We distort the UVs based on proximity to the event horizon to simulate gravity
+        // We calculate three "planes": Front disk, and the top/bottom lensed rings
+        
+        // --- 1. Top/Bottom Lensed Halo (The back of the disk warping around) ---
+        // We warp the Y coordinate inversely proportional to the distance to simulate bending
+        vec2 lensedUv = uv;
+        float lensDistortion = eventHorizon / (d * d * 2.0 + 0.01); 
+        lensedUv.y += sign(lensedUv.y) * lensDistortion;
+        
+        float lensedD = length(lensedUv);
+        if(d > eventHorizon) {
+            // Determine ring boundaries for the lensed part
+            float innerEdge = eventHorizon * 1.05;
+            float outerEdge = eventHorizon * 4.0;
+            
+            if(lensedD > innerEdge && lensedD < outerEdge) {
+                // Calculate angle for rotation
+                float angle = atan(lensedUv.y, lensedUv.x);
+                // Flow motion
+                vec2 polar = vec2(lensedD, angle - time * (1.0 / lensedD));
+                
+                // Add noise details
+                float dust = fbm(polar * 8.0);
+                
+                // Distance fade
+                float alpha = smoothstep(outerEdge, innerEdge, lensedD);
+                float fadeNearHorizon = smoothstep(innerEdge, innerEdge + 0.05, lensedD);
+                alpha *= fadeNearHorizon;
+                
+                // Doppler effect (brighter on left, darker on right)
+                float doppler = 1.0 - cos(angle) * 0.5;
+                
+                // Color mapping
+                float normalizedDist = (lensedD - innerEdge) / (outerEdge - innerEdge);
+                vec3 ringCol = mix(diskColorInner, diskColorMid, normalizedDist * 2.0);
+                ringCol = mix(ringCol, diskColorOuter, smoothstep(0.3, 1.0, normalizedDist));
+                
+                // Render lensed halo
+                col += ringCol * dust * alpha * doppler * 0.6; // Slightly dimmer in the back
+            }
+        }
+
+        // --- 2. Front Accretion Disk ---
+        // The disk is squashed in the Y axis to appear flat (perspective)
+        vec2 diskUv = uv;
+        diskUv.y *= 4.5; // Squash factor
+        
+        float diskD = length(diskUv);
+        
+        // Add a slight tilt wobble 
+        diskUv.x += sin(time * 0.5) * 0.05 * diskUv.y;
+
+        if (d > eventHorizon) {
+            float innerEdge = eventHorizon * 1.05;
+            float outerEdge = eventHorizon * 5.0;
+            
+            if(diskD > innerEdge && diskD < outerEdge) {
+                float angle = atan(diskUv.y, diskUv.x);
+                vec2 polar = vec2(diskD, angle - time * (1.5 / diskD)); // Faster in middle
+                
+                // Detailed noise for front disk
+                float dust = fbm(polar * vec2(10.0, 4.0));
+                float dust2 = fbm(polar * vec2(20.0, 8.0) + vec2(time, 0.0));
+                dust = dust * 0.7 + dust2 * 0.3;
+                
+                float alpha = smoothstep(outerEdge, innerEdge, diskD);
+                float fadeNearHorizon = smoothstep(innerEdge, innerEdge + 0.05, diskD);
+                alpha *= fadeNearHorizon;
+                
+                // Strong Doppler beaming for front disk (Left approaches, Right recedes)
+                // In WebGL coordinates, cos(angle) < 0 is left side.
+                float doppler = 1.0 - cos(angle) * 0.8;
+                
+                float normalizedDist = (diskD - innerEdge) / (outerEdge - innerEdge);
+                vec3 ringCol = mix(diskColorInner, diskColorMid, normalizedDist * 1.5);
+                ringCol = mix(ringCol, diskColorOuter, smoothstep(0.4, 1.0, normalizedDist));
+                
+                // Overwrite background with front disk
+                vec3 frontDiskFinal = ringCol * dust * alpha * doppler * 1.5;
+                
+                // Obscure the lensed part behind the front disk
+                // Soft blend based on alpha
+                col = mix(col, frontDiskFinal, alpha * dust);
+                col += frontDiskFinal * 0.5; // Additive glow
+            }
+        }
+
+        // --- 3. Photon Ring & Event Horizon Overlay ---
+        // Pure black singularity
+        float singularity = smoothstep(eventHorizon - 0.01, eventHorizon + 0.005, d);
+        col *= singularity;
+        
+        // Photon ring glow (Inner brightest edge)
+        float photonGlow = smoothstep(eventHorizon + 0.05, eventHorizon, d) * smoothstep(eventHorizon - 0.01, eventHorizon, d);
+        col += diskColorInner * photonGlow * 1.5;
+        
+        // Outer space ambient glow
+        float ambientGlow = exp(-d * 2.5) * 0.1;
+        col += diskColorMid * ambientGlow;
+
+        // Tone mapping / Contrast
+        col = pow(col, vec3(0.8));
+
+        gl_FragColor = vec4(col, 1.0);
+      }
+    `;
+
+    const geometry = new THREE.PlaneGeometry(2, 2);
+    const material = new THREE.ShaderMaterial({
+      vertexShader,
+      fragmentShader,
+      uniforms: {
+        uTime: { value: 0.0 },
+        uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
+      }
+    });
+
+    const mesh = new THREE.Mesh(geometry, material);
+    scene.add(mesh);
+
+    // Handle Resize
+    window.addEventListener('resize', () => {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      renderer.setSize(width, height);
+      material.uniforms.uResolution.value.set(width, height);
+    });
+
+    // Animation Loop
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      material.uniforms.uTime.value = clock.getElapsedTime();
+      renderer.render(scene, camera);
+    }
+    
+    // Start animation
+    animate();
+  </script>
 </body>
 </html>
