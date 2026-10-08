@@ -1,126 +1,467 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <title>E-Commerce Website</title>
-        <meta name="description" content="Website for E-Commerce">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="stylesheet" href="style/main.css">
-    </head>
-    <body>
-        <nav>
-            <ul>
-                <li><a href="#">Home</a></li>
-                <li><a href="#">Products</a></li>
-                <li><a href="#">Cart</a></li>
-                <li><a href="#">Contact Us</a></li>
-                <li style="position: relative;">
-    🛒 <span id="cart-count">0</span>
-</li>
-            </ul>
-        </nav>
-        <h1 class="txt-center">Welcome to Our E-commerce Website</h1>
-        <p class="txt-center">Discover a wide range of products at unbeatable prices. Shop now and enjoy exclusive deals!</p>
-        <main>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium E-Commerce Store</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: #333;
+            min-height: 100vh;
+        }
+
+        /* Navigation */
+        nav {
+            background: rgba(20, 20, 40, 0.95);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        nav a {
+            color: #fff;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 1.1rem;
+        }
+
+        nav a:hover {
+            color: #ffd700;
+            transform: translateY(-2px);
+        }
+
+        nav li:last-child {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 0.7rem 1.5rem;
+            border-radius: 25px;
+            color: white;
+            font-weight: 700;
+            position: relative;
+        }
+
+        #cart-count {
+            background: #ff006e;
+            color: white;
+            border-radius: 50%;
+            padding: 0.2rem 0.6rem;
+            font-size: 0.9rem;
+            margin-left: 0.5rem;
+            display: inline-block;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            color: #ffffff;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.3rem;
+            color: #b0b0ff;
+        }
+
+        /* Main Content */
+        main {
+            padding: 3rem 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .products {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .product {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .product:hover {
+            transform: translateY(-12px);
+            box-shadow: 0 15px 50px rgba(102, 126, 234, 0.4);
+        }
+
+        .product img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .product-content {
+            padding: 1.5rem;
+        }
+
+        .product h2 {
+            font-size: 1.4rem;
+            color: #333;
+            margin-bottom: 0.8rem;
+        }
+
+        .product p {
+            color: #666;
+            margin: 0.8rem 0;
+            line-height: 1.5;
+        }
+
+        .product p:first-of-type {
+            font-size: 0.9rem;
+            color: #999;
+        }
+
+        .discount {
+            background: linear-gradient(135deg, #ff006e, #ff4757);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            display: inline-block;
+            font-weight: 700;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+        }
+
+        .price {
+            font-size: 1.8rem;
+            color: #667eea;
+            font-weight: 700;
+            margin: 1rem 0;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Cart Notification */
+        .cart-notification {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: #667eea;
+            color: white;
+            padding: 1.5rem 2rem;
+            border-radius: 8px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease;
+            z-index: 1000;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+
+        .cart-notification.remove {
+            animation: slideOut 0.3s ease;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #0a0a0a;
+            color: #fff;
+            text-align: center;
+            padding: 2rem;
+            margin-top: 3rem;
+            border-top: 2px solid #667eea;
+        }
+
+        footer p {
+            margin: 0;
+        }
+
+        @media (max-width: 768px) {
+            nav ul {
+                gap: 1rem;
+                flex-wrap: wrap;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .products {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 1.5rem;
+            }
+
+            .header {
+                padding: 2rem 1rem;
+            }
+
+            main {
+                padding: 2rem 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="#home">Home</a></li>
+            <li><a href="#products">Products</a></li>
+            <li><a href="#cart">Cart</a></li>
+            <li><a href="#contact">Contact</a></li>
+            <li>
+                🛒 Cart: <span id="cart-count">0</span>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="header" id="home">
+        <h1>✨ Premium E-Commerce Store</h1>
+        <p>Discover an exclusive collection of high-quality products at unbeatable prices</p>
+    </div>
+
+    <main id="products">
         <section class="products">
-            <div class = "product">
-                <img src="images/headphone.jpg" height="250" alt="Product 1">
-                <h2>Product 1</h2>
-                <p>Description of Product 1</p>
-                <p>Headphone S-1, A Low-Latency Speaker with Noise Cancellation</p>
-                <p>Price: <strong>$19.99</strong></p>
-                <h6 class="discount">40% Discount</h6>
-                <button class = "btn">Add to Cart</button>
+            <div class="product">
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 250px; display: flex; align-items: center; justify-content: center; font-size: 5rem;">🎧</div>
+                <div class="product-content">
+                    <h2>Premium Headphones</h2>
+                    <p>High-Quality Audio</p>
+                    <p>Experience crystal-clear sound with active noise cancellation and 30-hour battery life.</p>
+                    <div class="price">$19.99</div>
+                    <h6 class="discount">40% OFF</h6>
+                    <button class="btn" onclick="addToCart('Premium Headphones', 19.99)">Add to Cart</button>
+                </div>
             </div>
-            <div class = "product">
-                <img src="images/Massager.jpg" height="250" alt="Product 2">
-                <h2>Product 2</h2>
-                <p>Description of Product 2</p>
-                <p>A Mini Aesthetic Pink Massager Made of Hard Rubber</p>
-                <p>Price: <strong>$29.99</strong></p>
-                <h6 class="discount">20% Discount</h6>
-                <button class = "btn">Add to Cart</button>
+
+            <div class="product">
+                <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); height: 250px; display: flex; align-items: center; justify-content: center; font-size: 5rem;">💆</div>
+                <div class="product-content">
+                    <h2>Massage Gun</h2>
+                    <p>Relaxation Tool</p>
+                    <p>Portable massager with multiple intensity levels for deep muscle relief.</p>
+                    <div class="price">$29.99</div>
+                    <h6 class="discount">20% OFF</h6>
+                    <button class="btn" onclick="addToCart('Massage Gun', 29.99)">Add to Cart</button>
+                </div>
             </div>
-            <div class = "product">
-                <img src="images/Hoodie.jpg" height="250" alt="Product 3">
-                <h2>Product 3</h2>
-                <p>Description of Product 3</p>
-                <p>A Comfortable Hoodie for Casual Wear</p>
-                <p>Price: <strong>$39.99</strong></p>
-                <h6 class="discount">10% Discount</h6>
-                <button class = "btn">Add to Cart</button>
+
+            <div class="product">
+                <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); height: 250px; display: flex; align-items: center; justify-content: center; font-size: 5rem;">👕</div>
+                <div class="product-content">
+                    <h2>Casual Hoodie</h2>
+                    <p>Comfort Apparel</p>
+                    <p>Premium fabric hoodie perfect for casual wear and outdoor activities.</p>
+                    <div class="price">$39.99</div>
+                    <h6 class="discount">10% OFF</h6>
+                    <button class="btn" onclick="addToCart('Casual Hoodie', 39.99)">Add to Cart</button>
+                </div>
             </div>
-            <div class = "product">
-                <img src = "images/Hammer.jpg" height="250" alt = "Product 4">
-                <h2>Product 4</h2>
-                <p>Description of Product 4</p>
-                <p>A Heavy-Duty Hammer for Construction and DIY Projects</p>
-                <p>Price: <strong>$59.99</strong></p>
-                <h6 class="discount">90% Discount</h6>
-                <button class = "btn">Add to Cart</button>
+
+            <div class="product">
+                <div style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); height: 250px; display: flex; align-items: center; justify-content: center; font-size: 5rem;">🔨</div>
+                <div class="product-content">
+                    <h2>Heavy-Duty Hammer</h2>
+                    <p>Professional Tool</p>
+                    <p>Premium hammer ideal for construction and DIY projects with ergonomic grip.</p>
+                    <div class="price">$59.99</div>
+                    <h6 class="discount">90% OFF</h6>
+                    <button class="btn" onclick="addToCart('Heavy-Duty Hammer', 59.99)">Add to Cart</button>
+                </div>
             </div>
-            <div class = "product">
-                <img src = "images/Umbrella.jpg" height="250" alt = "Product 5">
-                <h2>Product 5</h2>
-                <p>Description of Product 5</p>
-                <p>Umbrella with Rain Protection</p>
-                <p>Price: <strong>$39.99</strong></p>
-                <h6 class="discount">50% Discount</h6>
-                <button class = "btn">Add to Cart</button>
+
+            <div class="product">
+                <div style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); height: 250px; display: flex; align-items: center; justify-content: center; font-size: 5rem;">☂️</div>
+                <div class="product-content">
+                    <h2>Weather Umbrella</h2>
+                    <p>Protection Gear</p>
+                    <p>Durable umbrella with water-resistant coating and compact design.</p>
+                    <div class="price">$39.99</div>
+                    <h6 class="discount">50% OFF</h6>
+                    <button class="btn" onclick="addToCart('Weather Umbrella', 39.99)">Add to Cart</button>
+                </div>
             </div>
-            <div class = "product">
-                <img src = "images/Backpack.jpg" height="250" alt = "Product 6">
-                <h2>Product 6</h2>
-                <p>Description of Product 6</p>
-                <p>Backpack with Multiple Compartments for Travel and School</p>
-                <p>Price: <strong>$29.99</strong></p>
-                <h6 class="discount">70% Discount</h6>
-                <button class = "btn">Add to Cart</button>
+
+            <div class="product">
+                <div style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); height: 250px; display: flex; align-items: center; justify-content: center; font-size: 5rem;">🎒</div>
+                <div class="product-content">
+                    <h2>Travel Backpack</h2>
+                    <p>Adventure Companion</p>
+                    <p>Spacious backpack with multiple compartments and comfortable straps.</p>
+                    <div class="price">$29.99</div>
+                    <h6 class="discount">70% OFF</h6>
+                    <button class="btn" onclick="addToCart('Travel Backpack', 29.99)">Add to Cart</button>
+                </div>
             </div>
-            <div class = "product">
-                <img src = "images/Carpet.jpg" height="250" alt = "Product 7">
-                <h2>Product 7</h2>
-                <p>Description of Product 7</p>
-                <p>A Cozy Carpet for Your Home</p>
-                <p>Price: <strong>$69.99</strong></p>
-                <h6 class="discount">30% Discount</h6>
-                <button class = "btn">Add to Cart</button>
+
+            <div class="product">
+                <div style="background: linear-gradient(135deg, #ff9a56 0%, #ff6a88 100%); height: 250px; display: flex; align-items: center; justify-content: center; font-size: 5rem;">🧶</div>
+                <div class="product-content">
+                    <h2>Cozy Carpet</h2>
+                    <p>Home Comfort</p>
+                    <p>Soft and plush carpet that adds warmth and style to any room.</p>
+                    <div class="price">$69.99</div>
+                    <h6 class="discount">30% OFF</h6>
+                    <button class="btn" onclick="addToCart('Cozy Carpet', 69.99)">Add to Cart</button>
+                </div>
             </div>
-            <div class = "product">
-                <img src = "images/Sofa.jpg" height="250" alt = "Product 8">
-                <h2>Product 8</h2>
-                <p>Description of Product 8</p>
-                <p>A Comfortable Sofa for Your Living Room</p>
-                <p>Price: <strong>$289.99</strong></p>
-                <h6 class="discount">10% Discount</h6>
-                <button class = "btn">Add to Cart</button> 
+
+            <div class="product">
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 250px; display: flex; align-items: center; justify-content: center; font-size: 5rem;">🛋️</div>
+                <div class="product-content">
+                    <h2>Premium Sofa</h2>
+                    <p>Luxury Furniture</p>
+                    <p>Spacious and comfortable sofa perfect for living rooms and lounging.</p>
+                    <div class="price">$289.99</div>
+                    <h6 class="discount">10% OFF</h6>
+                    <button class="btn" onclick="addToCart('Premium Sofa', 289.99)">Add to Cart</button>
+                </div>
             </div>
-            <div class = "product">
-                <img src = "images/Lamp.jpg" height="250" alt = "Product 9">
-                <h2>Product 9</h2>
-                <p>Description of Product 9</p>
-                <p>A Beautiful Lamp for Your Desk</p>
-                <p>Price: <strong>$49.99</strong></p>
-                <h6 class="discount">80% Discount</h6>
-                <button class = "btn">Add to Cart</button>
-            </div> 
-            <div class = "product">
-                <img src = "images/TV.jpg" height="250" alt = "Product 10">
-                <h2>Product 10</h2>
-                <p>Description of Product 10</p>
-                <p>A High-Definition TV for Your Entertainment Needs</p>
-                <p>Price: <strong>$1999.99</strong></p>
-                <h6 class="discount">40% Discount</h6>
-                <button class = "btn">Add to Cart</button>
+
+            <div class="product">
+                <div style="background: linear-gradient(135deg, #f5af19 0%, #f12711 100%); height: 250px; display: flex; align-items: center; justify-content: center; font-size: 5rem;">💡</div>
+                <div class="product-content">
+                    <h2>Designer Lamp</h2>
+                    <p>Ambient Lighting</p>
+                    <p>Beautiful desk lamp with adjustable brightness and modern design.</p>
+                    <div class="price">$49.99</div>
+                    <h6 class="discount">80% OFF</h6>
+                    <button class="btn" onclick="addToCart('Designer Lamp', 49.99)">Add to Cart</button>
+                </div>
             </div>
-            </section>
-        </main>
-        <footer>
-        <div style="background-color:#333; color:#fff; text-align:center; padding:10px;">
-                    <p>&copy; 2026 E-commerce Website. All rights reserved</p>
-        </div>
-        </footer>
-        <script src="js/main.js"></script>
+
+            <div class="product">
+                <div style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); height: 250px; display: flex; align-items: center; justify-content: center; font-size: 5rem;">📺</div>
+                <div class="product-content">
+                    <h2>4K Smart TV</h2>
+                    <p>Entertainment System</p>
+                    <p>Premium 4K television with smart features and stunning picture quality.</p>
+                    <div class="price">$1999.99</div>
+                    <h6 class="discount">40% OFF</h6>
+                    <button class="btn" onclick="addToCart('4K Smart TV', 1999.99)">Add to Cart</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer id="contact">
+        <p>&copy; 2026 Premium E-Commerce Store. All rights reserved | Secure Shopping Guaranteed</p>
+    </footer>
+
+    <script>
+        let cartCount = 0;
+        let cart = [];
+
+        function addToCart(productName, price) {
+            cartCount++;
+            cart.push({ name: productName, price: price });
+            document.getElementById('cart-count').textContent = cartCount;
+
+            // Show notification
+            showNotification(`✅ ${productName} added to cart!`);
+        }
+
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'cart-notification';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.classList.add('remove');
+                setTimeout(() => notification.remove(), 300);
+            }, 2000);
+        }
+
+        // Restore cart count from localStorage
+        function loadCart() {
+            try {
+                const savedCart = localStorage.getItem('cart');
+                if (savedCart) {
+                    cart = JSON.parse(savedCart);
+                    cartCount = cart.length;
+                    document.getElementById('cart-count').textContent = cartCount;
+                }
+            } catch (e) {
+                console.log('Cart data not found');
+            }
+        }
+
+        // Save cart to localStorage
+        function saveCart() {
+            try {
+                localStorage.setItem('cart', JSON.stringify(cart));
+            } catch (e) {
+                console.log('Could not save cart');
+            }
+        }
+
+        // Load cart on page load
+        loadCart();
+
+        // Save cart before page unload
+        window.addEventListener('beforeunload', saveCart);
+    </script>
 </body>
 </html>
