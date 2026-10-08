@@ -130,7 +130,7 @@
 
   <main class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl w-full relative z-10 pb-20" id="cards-container">
     
-    <a href="#" class="glass-card p-6 rounded-xl group block link-item">
+    <a href="https://shadowx13413.github.io/Projects/Particles.html" target="_blank" rel="noopener noreferrer" class="glass-card p-6 rounded-xl group block link-item">
       <div class="card-content">
         <h2 class="font-bold text-xl text-white group-hover:text-amber-400 transition-colors flex items-center justify-between">
           Particles Sandbox 
@@ -140,7 +140,7 @@
       </div>
     </a>
 
-    <a href="#" class="glass-card p-6 rounded-xl group block link-item">
+    <a href="https://shadowx13413.github.io/Projects/Galaxy%20game.html" target="_blank" rel="noopener noreferrer" class="glass-card p-6 rounded-xl group block link-item">
       <div class="card-content">
         <h2 class="font-bold text-xl text-white group-hover:text-amber-400 transition-colors flex items-center justify-between">
           Galactic Interceptor
@@ -150,7 +150,7 @@
       </div>
     </a>
 
-    <a href="#" class="glass-card p-6 rounded-xl group block link-item">
+    <a href="https://shadowx13413.github.io/Projects/Mario.html" target="_blank" rel="noopener noreferrer" class="glass-card p-6 rounded-xl group block link-item">
       <div class="card-content">
         <h2 class="font-bold text-xl text-white group-hover:text-amber-400 transition-colors flex items-center justify-between">
           Super Plumber Bros
@@ -160,7 +160,7 @@
       </div>
     </a>
 
-    <a href="#" class="glass-card p-6 rounded-xl group block link-item">
+    <a href="https://shadowx13413.github.io/Projects/neuralnetworkspreview.html" target="_blank" rel="noopener noreferrer" class="glass-card p-6 rounded-xl group block link-item">
       <div class="card-content">
         <h2 class="font-bold text-xl text-white group-hover:text-amber-400 transition-colors flex items-center justify-between">
           Neural Network 101
@@ -170,7 +170,7 @@
       </div>
     </a>
 
-    <a href="#" class="glass-card p-6 rounded-xl group block sm:col-span-2 sm:w-3/4 sm:mx-auto w-full link-item">
+    <a href="https://shadowx13413.github.io/Projects/E-commerceWebsite.html" target="_blank" rel="noopener noreferrer" class="glass-card p-6 rounded-xl group block sm:col-span-2 sm:w-3/4 sm:mx-auto w-full link-item">
       <div class="card-content text-center">
         <h2 class="font-bold text-xl text-white group-hover:text-amber-400 transition-colors inline-flex items-center gap-2">
           E-Commerce UI
@@ -184,17 +184,7 @@
   <script>
     // --- UI Interactions ---
     const cards = document.querySelectorAll('.glass-card');
-    const links = document.querySelectorAll('.link-item');
-
-    // Prevent default on links for the demo
-    links.forEach(link => {
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
-        const text = link.querySelector('h2').innerText.replace(' ↗', '');
-        console.log(`Navigating to ${text}...`);
-      });
-    });
-
+    
     // 3D Tilt Logic
     cards.forEach(card => {
       card.addEventListener('mousemove', e => {
