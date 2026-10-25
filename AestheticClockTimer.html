@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Minimal Flip Clock</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Default Dark Theme - Pure Black */
+            --bg: #000000;
+            --ui-bg: #111111;
+            --card-bg: #1a1a1a;
+            --text-color: #f0f0f0;
+            --ui-text: #666666;
+            --ui-text-active: #ffffff;
+            --shadow: 0 10px 30px rgba(0,0,0,0.8);
+            --line: #222222;
+            --accent: #ffffff;
+            --clock-scale: 1;
+        }
+
+        [data-theme="light"] {
+            --bg: #f4f4f5;
+            --ui-bg: #e4e4e7;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --ui-text: #71717a;
+            --ui-text-active: #000000;
+            --shadow: 0 10px 30px rgba(0,0,0,0.08);
+            --line: #e5e5e5;
+            --accent: #000000;
+        }
+
+        [data-theme="neon"] {
+            --bg: #050505;
+            --ui-bg: #111111;
+            --card-bg: #0a0a0a;
+            --text-color: #00ff00;
+            --ui-text: #005500;
+            --ui-text-active: #00ff00;
+            --shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+            --line: #002200;
+            --accent: #00ff00;
+        }
+
+        [data-theme="vintage"] {
+            --bg: #d9d0b4;
+            --ui-bg: #cbbd9b;
+            --card-bg: #e6dfc8;
+            --text-color: #4a3b2c;
+            --ui-text: #7a6b5c;
+            --ui-text-active: #3a2b1c;
+            --shadow: 0 10px 25px rgba(74, 59, 44, 0.2);
+            --line: #c4ba9f;
+            --accent: #4a3b2c;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--ui-text-active);
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.5s ease, color 0.5s ease;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        /* UI Elements */
+        .nav-link {
+            color: var(--ui-text);
+            transition: color 0.3s ease;
+            position: relative;
+        }
+        .nav-link:hover { color: var(--ui-text-active); }
+        .nav-link.active { color: var(--ui-text-active); }
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 2px;
+            background-color: var(--accent);
+            border-radius: 2px;
+        }
+
+        .btn {
+            background-color: var(--ui-bg);
+            color: var(--ui-text-active);
+            border: 1px solid var(--line);
+            transition: all 0.2s ease;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .btn:active { transform: translateY(0); }
+
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+        }
+        .modal-content {
+            background-color: var(--bg);
+            border: 1px solid var(--line);
+            color: var(--ui-text-active);
+        }
+        .modal-input {
+            background-color: var(--ui-bg);
+            color: var(--ui-text-active);
+            border: 1px solid var(--line);
+        }
+        .modal-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        /* Flip Clock Core CSS */
+        .clock-container {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-family: 'Oswald', sans-serif;
+            transition: gap 0.3s ease;
+        }
+
+        .clock-divider {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: calc(clamp(10px, 2vw, 24px) * var(--clock-scale));
+            margin: 0 12px;
+            transition: gap 0.3s ease;
+        }
+
+        .clock-divider::before, .clock-divider::after {
+            content: '';
+            width: calc(clamp(12px, 2.5vw, 24px) * var(--clock-scale));
+            height: calc(clamp(12px, 2.5vw, 24px) * var(--clock-scale));
+            background-color: #555555;
+            border-radius: 50%;
+            transition: width 0.3s ease, height 0.3s ease;
+        }
+
+        .flip-card {
+            position: relative;
+            width: calc(clamp(70px, 12vw, 150px) * var(--clock-scale));
+            height: calc(clamp(110px, 20vw, 240px) * var(--clock-scale));
+            font-size: calc(clamp(80px, 14vw, 170px) * var(--clock-scale));
+            border-radius: 1.5rem;
+            perspective: 1000px;
+            box-shadow: var(--shadow);
+            background-color: var(--bg);
+            transition: width 0.3s ease, height 0.3s ease, font-size 0.3s ease;
+        }
+
+        .half {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 50%;
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            transform-style: preserve-3d;
+            backface-visibility: hidden;
+        }
+
+        .top-half {
+            top: 0;
+            transform-origin: bottom;
+            border-top-left-radius: 1.5rem;
+            border-top-right-radius: 1.5rem;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .bottom-half {
+            bottom: 0;
+            transform-origin: top;
+            border-bottom-left-radius: 1.5rem;
+            border-bottom-right-radius: 1.5rem;
+        }
+
+        .top-half .text {
+            position: absolute;
+            top: 0;
+            height: calc(clamp(110px, 20vw, 240px) * var(--clock-scale));
+            line-height: calc(clamp(110px, 20vw, 240px) * var(--clock-scale));
+            transition: height 0.3s ease, line-height 0.3s ease;
+        }
+
+        .bottom-half .text {
+            position: absolute;
+            bottom: 0;
+            height: calc(clamp(110px, 20vw, 240px) * var(--clock-scale));
+            line-height: calc(clamp(110px, 20vw, 240px) * var(--clock-scale));
+            transition: height 0.3s ease, line-height 0.3s ease;
+        }
+
+        .flipper.top-half {
+            z-index: 2;
+            transition: transform 0.3s ease-in;
+        }
+
+        .flipper.bottom-half {
+            z-index: 2;
+            transform: rotateX(90deg);
+            transition: transform 0.3s ease-out;
+            transition-delay: 0.3s; /* Wait for top to finish */
+        }
+
+        .flipper.top-half.flip-down { transform: rotateX(-90deg); }
+        .flipper.bottom-half.flip-down { transform: rotateX(0deg); }
+
+        /* Theme Switcher Dots */
+        .theme-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform 0.2s ease;
+        }
+        .theme-dot:hover { transform: scale(1.2); }
+        .theme-dot.active { border-color: var(--accent); }
+    </style>
+</head>
+<body>
+
+    <!-- Header / Navigation -->
+    <nav class="absolute top-8 w-full flex justify-center gap-6 text-sm tracking-widest font-medium z-10">
+        <button class="nav-link active uppercase" data-mode="clock">Clock</button>
+        <button class="nav-link uppercase" data-mode="pomodoro">Pomodoro</button>
+        <button class="nav-link uppercase" data-mode="timer">Timer</button>
+        <button class="nav-link uppercase" data-mode="stopwatch">Stopwatch</button>
+        <button class="nav-link uppercase" data-mode="stats" id="nav-stats">Stats</button>
+    </nav>
+
+    <!-- Main Clock & Controls Area -->
+    <div class="flex-1 flex flex-col items-center justify-center relative w-full h-full">
+        
+        <!-- End Time Indicator -->
+        <div id="end-time-indicator" class="hidden mb-2 text-sm font-medium tracking-wider text-center w-full z-10 opacity-70 transition-all duration-300" style="color: var(--ui-text-active);">
+            ENDS AT <span id="end-time-text">--:--</span>
+        </div>
+
+        <!-- Pomodoro Phase Indicator -->
+        <div id="pomodoro-indicator" class="hidden mb-6 text-sm font-medium tracking-wider text-center w-full z-10 opacity-70 transition-all duration-300">
+            <span id="pomo-status">WORK</span> • INTERVAL <span id="pomo-interval">1</span>/4
+        </div>
+
+        <!-- Clock Container -->
+        <div id="clock-wrapper" class="clock-container">
+            <div id="h1"></div>
+            <div id="h2"></div>
+            <div class="clock-divider"></div>
+            <div id="m1"></div>
+            <div id="m2"></div>
+            <div class="clock-divider"></div>
+            <div id="s1"></div>
+            <div id="s2"></div>
+        </div>
+
+        <!-- Dynamic Controls (Timer, Stopwatch, Pomodoro) -->
+        <div id="controls" class="hidden mt-10 flex gap-4 z-10 transition-all duration-300">
+            <button id="btn-start" class="btn px-6 py-2 rounded-full font-bold tracking-widest uppercase">Start</button>
+            <button id="btn-pause" class="btn hidden px-6 py-2 rounded-full font-bold tracking-widest uppercase">Pause</button>
+            <button id="btn-reset" class="btn px-6 py-2 rounded-full font-bold tracking-widest uppercase">Reset</button>
+            <button id="btn-settings" class="btn px-4 py-2 rounded-full hidden" title="Settings">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Theme Switcher & Global Controls -->
+    <div class="absolute bottom-8 right-8 flex gap-3 z-10 items-center">
+        <button id="btn-fullscreen" class="btn p-2 rounded-full mr-1 hover:text-white" title="Toggle Fullscreen">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+        </button>
+        <button id="btn-global-settings" class="btn p-2 rounded-full mr-2 hover:text-white" title="Appearance Settings">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+        </button>
+        <div class="theme-dot active" style="background: #000000; border-color: #fff;" data-set-theme="dark" title="Dark"></div>
+        <div class="theme-dot" style="background: #f4f4f5; border-color: #333;" data-set-theme="light" title="Light"></div>
+        <div class="theme-dot" style="background: #000; border-color: #0f0;" data-set-theme="neon" title="Neon"></div>
+        <div class="theme-dot" style="background: #d9d0b4; border-color: #4a3b2c;" data-set-theme="vintage" title="Vintage"></div>
+    </div>
+
+    <!-- Pomodoro Settings Modal -->
+    <div id="modal-pomodoro" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center">
+        <div class="modal-content rounded-xl p-8 max-w-sm w-full mx-4 shadow-2xl">
+            <h2 class="text-xl font-bold mb-6 text-center tracking-wide uppercase">Pomodoro Settings</h2>
+            <div class="space-y-4">
+                <div class="flex justify-between items-center">
+                    <label class="text-sm font-medium">Work (min)</label>
+                    <input type="number" id="inp-work" value="25" min="1" max="90" class="modal-input w-20 px-3 py-1 rounded text-center">
+                </div>
+                <div class="flex justify-between items-center">
+                    <label class="text-sm font-medium">Short Break (min)</label>
+                    <input type="number" id="inp-short" value="5" min="1" max="30" class="modal-input w-20 px-3 py-1 rounded text-center">
+                </div>
+                <div class="flex justify-between items-center">
+                    <label class="text-sm font-medium">Long Break (min)</label>
+                    <input type="number" id="inp-long" value="15" min="1" max="60" class="modal-input w-20 px-3 py-1 rounded text-center">
+                </div>
+                <div class="flex justify-between items-center">
+                    <label class="text-sm font-medium">Intervals</label>
+                    <input type="number" id="inp-intervals" value="4" min="1" max="10" class="modal-input w-20 px-3 py-1 rounded text-center">
+                </div>
+            </div>
+            <div class="mt-8 flex gap-3">
+                <button id="btn-pomo-cancel" class="btn flex-1 py-2 rounded-lg font-medium">Cancel</button>
+                <button id="btn-pomo-save" class="btn flex-1 py-2 rounded-lg font-medium" style="background: var(--accent); color: var(--bg);">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timer Settings Modal -->
+    <div id="modal-timer" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center">
+        <div class="modal-content rounded-xl p-8 max-w-sm w-full mx-4 shadow-2xl">
+            <h2 class="text-xl font-bold mb-6 text-center tracking-wide uppercase">Timer Settings</h2>
+            <div class="space-y-4">
+                <div class="flex justify-between items-center">
+                    <label class="text-sm font-medium">Hours</label>
+                    <input type="number" id="inp-timer-h" value="0" min="0" max="23" class="modal-input w-20 px-3 py-1 rounded text-center">
+                </div>
+                <div class="flex justify-between items-center">
+                    <label class="text-sm font-medium">Minutes</label>
+                    <input type="number" id="inp-timer-m" value="10" min="0" max="59" class="modal-input w-20 px-3 py-1 rounded text-center">
+                </div>
+                <div class="flex justify-between items-center">
+                    <label class="text-sm font-medium">Seconds</label>
+                    <input type="number" id="inp-timer-s" value="0" min="0" max="59" class="modal-input w-20 px-3 py-1 rounded text-center">
+                </div>
+            </div>
+            <div class="mt-8 flex gap-3">
+                <button id="btn-timer-cancel" class="btn flex-1 py-2 rounded-lg font-medium">Cancel</button>
+                <button id="btn-timer-save" class="btn flex-1 py-2 rounded-lg font-medium" style="background: var(--accent); color: var(--bg);">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Appearance Settings Modal -->
+    <div id="modal-global-settings" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center">
+        <div class="modal-content rounded-xl p-8 max-w-sm w-full mx-4 shadow-2xl">
+            <h2 class="text-xl font-bold mb-6 text-center tracking-wide uppercase">Appearance</h2>
+            <div class="space-y-6">
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <label class="text-sm font-medium">Clock Scale / Size</label>
+                        <span id="size-display" class="text-sm font-mono">100%</span>
+                    </div>
+                    <input type="range" id="inp-clock-scale" min="0.5" max="1.8" step="0.05" value="1" class="w-full accent-white">
+                </div>
+            </div>
+            <div class="mt-8 flex justify-center">
+                <button id="btn-global-close" class="btn px-8 py-2 w-full rounded-lg font-medium text-sm tracking-widest uppercase" style="background: var(--accent); color: var(--bg);">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Modal -->
+    <div id="modal-stats" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center">
+        <div class="modal-content rounded-[1.5rem] p-8 max-w-2xl w-full mx-4 shadow-2xl">
+            <h2 class="text-xl font-bold mb-6 text-center tracking-wide uppercase">Study Statistics</h2>
+            <div class="flex justify-center gap-4 mb-6">
+                <button id="btn-stat-daily" class="btn px-4 py-1 rounded-full text-xs font-semibold active-stat" style="background: var(--accent); color: var(--bg);">Daily</button>
+                <button id="btn-stat-monthly" class="btn px-4 py-1 rounded-full text-xs font-semibold">Monthly</button>
+                <button id="btn-stat-yearly" class="btn px-4 py-1 rounded-full text-xs font-semibold">Yearly</button>
+            </div>
+            <div class="w-full h-64 rounded-xl p-4 relative" style="background: var(--card-bg);">
+                <canvas id="statsChart"></canvas>
+            </div>
+            <div class="mt-6 flex justify-center gap-3 flex-wrap">
+                <button id="btn-clear-pomo" class="btn px-4 py-1 rounded-lg text-xs font-semibold hover:text-red-400 transition-colors border border-[var(--line)]">Clear Pomodoro</button>
+                <button id="btn-clear-timer" class="btn px-4 py-1 rounded-lg text-xs font-semibold hover:text-red-400 transition-colors border border-[var(--line)]">Clear Timer</button>
+                <button id="btn-clear-stopwatch" class="btn px-4 py-1 rounded-lg text-xs font-semibold hover:text-red-400 transition-colors border border-[var(--line)]">Clear Stopwatch</button>
+            </div>
+            <div class="mt-8 flex justify-center">
+                <button id="btn-stats-close" class="btn px-8 py-2 rounded-full font-medium text-sm tracking-widest uppercase">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full text-sm font-medium z-[100] opacity-0 transition-opacity duration-300 pointer-events-none shadow-xl" style="background: var(--ui-bg); color: var(--ui-text-active); border: 1px solid var(--line);"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Firebase Init & Auth ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        
+        let db, auth, userId;
+        let sessionsData = [];
+
+        if (firebaseConfig) {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            
+            const initAuth = async () => {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined') {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                    userId = auth.currentUser.uid;
+                    fetchStats();
+                } catch (e) {
+                    console.error("Auth error", e);
+                }
+            };
+            initAuth();
+        }
+
+        // --- Stats Logic ---
+        let statsChart = null;
+        let currentStatView = 'daily';
+
+        const fetchStats = async () => {
+            if (!db || !userId) return;
+            try {
+                const querySnapshot = await getDocs(collection(db, 'artifacts', appId, 'users', userId, 'study_sessions'));
+                sessionsData = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderChart();
+            } catch (e) {
+                console.error("Fetch stats error", e);
+            }
+        };
+
+        const logSession = async (duration, modeToLog) => {
+            if (duration < 1) return; // Track anything 1 second or more
+            const newSession = {
+                duration: duration, // in seconds
+                timestamp: Date.now(),
+                mode: modeToLog
+            };
+            if (db && userId) {
+                try {
+                    const docRef = await addDoc(collection(db, 'artifacts', appId, 'users', userId, 'study_sessions'), newSession);
+                    newSession.id = docRef.id;
+                } catch (e) {
+                    console.error("Error saving session", e);
+                }
+            }
+            sessionsData.push(newSession);
+            renderChart(); // Update chart immediately
+        };
+
+        const renderChart = () => {
+            const ctx = document.getElementById('statsChart').getContext('2d');
+            if (statsChart) statsChart.destroy();
+
+            const aggregated = {};
+            sessionsData.forEach(session => {
+                const date = new Date(session.timestamp);
+                let key;
+                if (currentStatView === 'daily') {
+                    key = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                } else if (currentStatView === 'monthly') {
+                    key = date.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+                } else {
+                    key = date.getFullYear().toString();
+                }
+                
+                if (!aggregated[key]) aggregated[key] = { pomodoro: 0, timer: 0, stopwatch: 0 };
+                
+                const mode = session.mode || 'pomodoro'; // Backward compatible
+                if (aggregated[key][mode] !== undefined) {
+                    aggregated[key][mode] += session.duration;
+                }
+            });
+
+            // Sort chronologically
+            const sortedKeys = Object.keys(aggregated).sort((a, b) => {
+                if (currentStatView === 'yearly') return parseInt(a) - parseInt(b);
+                return new Date(a) - new Date(b); 
+            });
+            
+            const limit = currentStatView === 'daily' ? 7 : (currentStatView === 'monthly' ? 12 : 5);
+            const displayKeys = sortedKeys.slice(-limit);
+
+            const labels = displayKeys;
+            const pomoData = displayKeys.map(k => (aggregated[k].pomodoro / 60).toFixed(1));
+            const timerData = displayKeys.map(k => (aggregated[k].timer / 60).toFixed(1));
+            const stopData = displayKeys.map(k => (aggregated[k].stopwatch / 60).toFixed(1));
+
+            const chartColor = getComputedStyle(document.body).getPropertyValue('--accent').trim() || '#ffffff';
+            const gridColor = getComputedStyle(document.body).getPropertyValue('--line').trim() || '#333333';
+            const textColor = getComputedStyle(document.body).getPropertyValue('--ui-text').trim() || '#888888';
+
+            statsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Pomodoro',
+                            data: pomoData,
+                            backgroundColor: chartColor,
+                            borderRadius: 4,
+                            maxBarThickness: 12
+                        },
+                        {
+                            label: 'Timer',
+                            data: timerData,
+                            backgroundColor: '#60a5fa', // Distinguishable Blue
+                            borderRadius: 4,
+                            maxBarThickness: 12
+                        },
+                        {
+                            label: 'Stopwatch',
+                            data: stopData,
+                            backgroundColor: '#34d399', // Distinguishable Green
+                            borderRadius: 4,
+                            maxBarThickness: 12
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { 
+                            ticks: { color: textColor }, 
+                            grid: { display: false } 
+                        },
+                        y: { 
+                            beginAtZero: true, 
+                            ticks: { color: textColor }, 
+                            grid: { color: gridColor },
+                            title: { display: true, text: 'Minutes', color: textColor }
+                        }
+                    },
+                    plugins: { 
+                        legend: { 
+                            display: true,
+                            labels: { color: textColor, boxWidth: 12 }
+                        } 
+                    }
+                }
+            });
+        };
+
+        const setStatView = (view) => {
+            currentStatView = view;
+            document.querySelectorAll('#modal-stats .btn').forEach(b => {
+                if(b.id.startsWith('btn-stat-')) {
+                    b.style.background = 'var(--ui-bg)';
+                    b.style.color = 'var(--ui-text-active)';
+                }
+            });
+            const activeBtn = document.getElementById(`btn-stat-${view}`);
+            activeBtn.style.background = 'var(--accent)';
+            activeBtn.style.color = 'var(--bg)';
+            renderChart();
+        };
+
+        document.getElementById('btn-stat-daily').addEventListener('click', () => setStatView('daily'));
+        document.getElementById('btn-stat-monthly').addEventListener('click', () => setStatView('monthly'));
+        document.getElementById('btn-stat-yearly').addEventListener('click', () => setStatView('yearly'));
+        
+        document.getElementById('nav-stats').addEventListener('click', () => {
+            document.getElementById('modal-stats').classList.remove('hidden');
+            renderChart();
+        });
+        document.getElementById('btn-stats-close').addEventListener('click', () => {
+            document.getElementById('modal-stats').classList.add('hidden');
+        });
+
+        const clearDataByMode = async (modeToClear) => {
+            if (db && userId) {
+                try {
+                    const toDelete = sessionsData.filter(s => (s.mode || 'pomodoro') === modeToClear);
+                    for (const session of toDelete) {
+                        if (session.id) {
+                            await deleteDoc(doc(db, 'artifacts', appId, 'users', userId, 'study_sessions', session.id));
+                        }
+                    }
+                } catch (e) {
+                    console.error("Error clearing data", e);
+                }
+            }
+            sessionsData = sessionsData.filter(s => (s.mode || 'pomodoro') !== modeToClear);
+            renderChart();
+            if (typeof showToast !== 'undefined') {
+                showToast(`${modeToClear.charAt(0).toUpperCase() + modeToClear.slice(1)} data cleared.`);
+            }
+        };
+
+        document.getElementById('btn-clear-pomo').addEventListener('click', () => clearDataByMode('pomodoro'));
+        document.getElementById('btn-clear-timer').addEventListener('click', () => clearDataByMode('timer'));
+        document.getElementById('btn-clear-stopwatch').addEventListener('click', () => clearDataByMode('stopwatch'));
+
+        // --- Core FlipDigit Component ---
+        class FlipDigit {
+            constructor(containerId) {
+                this.container = document.getElementById(containerId);
+                this.container.classList.add('flip-card');
+                this.value = '0';
+                this.topHalf = this.createHalf('top-half', 'static', this.value);
+                this.bottomHalf = this.createHalf('bottom-half', 'static', this.value);
+                this.container.appendChild(this.topHalf.el);
+                this.container.appendChild(this.bottomHalf.el);
+            }
+            createHalf(halfClass, typeClass, val) {
+                const el = document.createElement('div');
+                el.className = `half ${halfClass} ${typeClass}`;
+                const text = document.createElement('div');
+                text.className = 'text';
+                text.innerText = val;
+                el.appendChild(text);
+                return { el, text };
+            }
+            update(newValue) {
+                if (this.value === newValue) return;
+                const existingFlippers = this.container.querySelectorAll('.flipper');
+                existingFlippers.forEach(f => f.remove());
+                const oldValue = this.value;
+                this.value = newValue;
+                const flipTop = this.createHalf('top-half', 'flipper', oldValue);
+                const flipBottom = this.createHalf('bottom-half', 'flipper', newValue);
+                this.container.appendChild(flipTop.el);
+                this.container.appendChild(flipBottom.el);
+                this.topHalf.text.innerText = newValue;
+                requestAnimationFrame(() => {
+                    flipTop.el.classList.add('flip-down');
+                    flipBottom.el.classList.add('flip-down');
+                });
+                setTimeout(() => {
+                    this.bottomHalf.text.innerText = newValue;
+                    if (this.container.contains(flipTop.el)) flipTop.el.remove();
+                    if (this.container.contains(flipBottom.el)) flipBottom.el.remove();
+                }, 600);
+            }
+        }
+
+        const digits = {
+            h1: new FlipDigit('h1'), h2: new FlipDigit('h2'),
+            m1: new FlipDigit('m1'), m2: new FlipDigit('m2'),
+            s1: new FlipDigit('s1'), s2: new FlipDigit('s2')
+        };
+
+        const formatTime = (h, m, s) => {
+            const pad = num => num.toString().padStart(2, '0');
+            return [...pad(h), ...pad(m), ...pad(s)];
+        };
+
+        const updateClockDisplay = (h, m, s) => {
+            const vals = formatTime(h, m, s);
+            digits.h1.update(vals[0]); digits.h2.update(vals[1]);
+            digits.m1.update(vals[2]); digits.m2.update(vals[3]);
+            digits.s1.update(vals[4]); digits.s2.update(vals[5]);
+        };
+
+        let currentMode = 'clock';
+        let loopInterval = null;
+        let isRunning = false;
+        
+        let sessionStartTime = null;
+
+        const state = {
+            pomodoro: { work: 25, short: 5, long: 15, intervals: 4, currInterval: 1, phase: 'work', timeLeft: 25 * 60 },
+            timer: { h: 0, m: 10, s: 0, timeLeft: 10 * 60 },
+            stopwatch: { elapsed: 0 }
+        };
+
+        const updateEndTimeUI = () => {
+            const endTimeIndicator = document.getElementById('end-time-indicator');
+            if (!isRunning || (currentMode !== 'timer' && currentMode !== 'pomodoro')) {
+                endTimeIndicator.classList.add('hidden');
+                return;
+            }
+            
+            let timeLeft = 0;
+            if (currentMode === 'timer') timeLeft = state.timer.timeLeft;
+            if (currentMode === 'pomodoro') timeLeft = state.pomodoro.timeLeft;
+
+            const endDate = new Date(Date.now() + timeLeft * 1000);
+            let h = endDate.getHours();
+            const m = endDate.getMinutes().toString().padStart(2, '0');
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            h = h % 12 || 12;
+
+            document.getElementById('end-time-text').innerText = `${h}:${m} ${ampm}`;
+            endTimeIndicator.classList.remove('hidden');
+        };
+
+        const tick = () => {
+            if (currentMode === 'clock') {
+                const now = new Date();
+                let h = now.getHours();
+                h = h % 12 || 12;
+                updateClockDisplay(h, now.getMinutes(), now.getSeconds());
+            } 
+            else if (currentMode === 'stopwatch' && isRunning) {
+                state.stopwatch.elapsed++;
+                const s = state.stopwatch.elapsed;
+                updateClockDisplay(Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60);
+            }
+            else if (currentMode === 'timer' && isRunning) {
+                if (state.timer.timeLeft > 0) {
+                    state.timer.timeLeft--;
+                    const s = state.timer.timeLeft;
+                    updateClockDisplay(Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60);
+                } else {
+                    handleSessionEnd();
+                    stopEngine();
+                }
+            }
+            else if (currentMode === 'pomodoro' && isRunning) {
+                if (state.pomodoro.timeLeft > 0) {
+                    state.pomodoro.timeLeft--;
+                } else {
+                    handleSessionEnd();
+                    let p = state.pomodoro;
+                    if (p.phase === 'work') {
+                        if (p.currInterval >= p.intervals) {
+                            p.phase = 'long';
+                            p.timeLeft = p.long * 60;
+                        } else {
+                            p.phase = 'short';
+                            p.timeLeft = p.short * 60;
+                        }
+                    } else if (p.phase === 'short') {
+                        p.phase = 'work';
+                        p.currInterval++;
+                        p.timeLeft = p.work * 60;
+                    } else if (p.phase === 'long') {
+                        p.phase = 'work';
+                        p.currInterval = 1;
+                        p.timeLeft = p.work * 60;
+                        stopEngine();
+                    }
+                    updatePomoUI();
+                    updateEndTimeUI();
+                    if (isRunning && p.phase === 'work') {
+                        sessionStartTime = Date.now();
+                    }
+                }
+                const s = state.pomodoro.timeLeft;
+                updateClockDisplay(Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60);
+            }
+        };
+
+        const handleSessionEnd = () => {
+            if (sessionStartTime && isRunning) {
+                const duration = Math.floor((Date.now() - sessionStartTime) / 1000);
+                const modeToLog = currentMode === 'pomodoro' ? (state.pomodoro.phase === 'work' ? 'pomodoro' : 'break') : currentMode;
+                if (modeToLog !== 'break') {
+                    logSession(duration, modeToLog);
+                }
+            }
+            sessionStartTime = null;
+        };
+
+        const startEngine = () => {
+            if(!loopInterval) loopInterval = setInterval(tick, 1000);
+            isRunning = true;
+            document.getElementById('btn-start').classList.add('hidden');
+            document.getElementById('btn-pause').classList.remove('hidden');
+            
+            sessionStartTime = Date.now();
+            updateEndTimeUI();
+        };
+
+        const stopEngine = () => {
+            if (isRunning) handleSessionEnd();
+            isRunning = false;
+            document.getElementById('btn-start').classList.remove('hidden');
+            document.getElementById('btn-pause').classList.add('hidden');
+            updateEndTimeUI();
+        };
+
+        const resetEngine = () => {
+            stopEngine();
+            if (currentMode === 'stopwatch') {
+                state.stopwatch.elapsed = 0;
+                updateClockDisplay(0, 0, 0);
+            } else if (currentMode === 'timer') {
+                state.timer.timeLeft = (state.timer.h * 3600) + (state.timer.m * 60) + state.timer.s;
+                updateClockDisplay(state.timer.h, state.timer.m, state.timer.s);
+            } else if (currentMode === 'pomodoro') {
+                state.pomodoro.currInterval = 1;
+                state.pomodoro.phase = 'work';
+                state.pomodoro.timeLeft = state.pomodoro.work * 60;
+                updatePomoUI();
+                updateClockDisplay(Math.floor(state.pomodoro.timeLeft / 3600), Math.floor((state.pomodoro.timeLeft % 3600) / 60), state.pomodoro.timeLeft % 60);
+            }
+        };
+
+        const navLinks = document.querySelectorAll('.nav-link');
+        const controls = document.getElementById('controls');
+        const pomoIndicator = document.getElementById('pomodoro-indicator');
+        const btnSettings = document.getElementById('btn-settings');
+
+        const switchMode = (mode) => {
+            if (mode === 'stats') return;
+            currentMode = mode;
+            navLinks.forEach(link => {
+                if (link.dataset.mode !== 'stats') {
+                    link.classList.toggle('active', link.dataset.mode === mode);
+                }
+            });
+            stopEngine();
+            if (mode === 'clock') {
+                controls.classList.add('hidden');
+                pomoIndicator.classList.add('hidden');
+                tick();
+                if(!loopInterval) loopInterval = setInterval(tick, 1000);
+            } else {
+                controls.classList.remove('hidden');
+                clearInterval(loopInterval);
+                loopInterval = null;
+                if (mode === 'pomodoro') {
+                    pomoIndicator.classList.remove('hidden');
+                    btnSettings.classList.remove('hidden');
+                    resetEngine();
+                } else {
+                    pomoIndicator.classList.add('hidden');
+                    if (mode === 'timer') {
+                        btnSettings.classList.remove('hidden');
+                        resetEngine();
+                    } else if (mode === 'stopwatch') {
+                        btnSettings.classList.add('hidden');
+                        resetEngine();
+                    }
+                }
+            }
+        };
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                if (e.target.dataset.mode !== 'stats') switchMode(e.target.dataset.mode);
+            });
+        });
+
+        document.getElementById('btn-start').addEventListener('click', startEngine);
+        document.getElementById('btn-pause').addEventListener('click', stopEngine);
+        document.getElementById('btn-reset').addEventListener('click', resetEngine);
+        
+        btnSettings.addEventListener('click', () => {
+            if (currentMode === 'pomodoro') document.getElementById('modal-pomodoro').classList.remove('hidden');
+            if (currentMode === 'timer') document.getElementById('modal-timer').classList.remove('hidden');
+        });
+
+        const closeModals = () => {
+            document.getElementById('modal-pomodoro').classList.add('hidden');
+            document.getElementById('modal-timer').classList.add('hidden');
+        };
+        
+        document.getElementById('btn-pomo-cancel').addEventListener('click', closeModals);
+        document.getElementById('btn-timer-cancel').addEventListener('click', closeModals);
+
+        // Global Settings & Fullscreen Logic
+        const btnGlobalSettings = document.getElementById('btn-global-settings');
+        const modalGlobalSettings = document.getElementById('modal-global-settings');
+        const btnGlobalClose = document.getElementById('btn-global-close');
+        const inpClockScale = document.getElementById('inp-clock-scale');
+        const sizeDisplay = document.getElementById('size-display');
+        const btnFullscreen = document.getElementById('btn-fullscreen');
+
+        const showToast = (msg) => {
+            const toast = document.getElementById('toast');
+            if (toast) {
+                toast.innerText = msg;
+                toast.style.opacity = '1';
+                setTimeout(() => { toast.style.opacity = '0'; }, 3000);
+            }
+        };
+
+        btnGlobalSettings.addEventListener('click', () => {
+            modalGlobalSettings.classList.remove('hidden');
+        });
+        
+        btnGlobalClose.addEventListener('click', () => {
+            modalGlobalSettings.classList.add('hidden');
+        });
+
+        inpClockScale.addEventListener('input', (e) => {
+            const scale = e.target.value;
+            document.documentElement.style.setProperty('--clock-scale', scale);
+            sizeDisplay.innerText = Math.round(scale * 100) + '%';
+        });
+
+        btnFullscreen.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen().catch(err => {
+                        showToast("Fullscreen disabled in preview environment.");
+                    });
+                } else {
+                    showToast("Fullscreen API not supported.");
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        });
+
+        document.getElementById('btn-pomo-save').addEventListener('click', () => {
+            state.pomodoro.work = parseInt(document.getElementById('inp-work').value) || 25;
+            state.pomodoro.short = parseInt(document.getElementById('inp-short').value) || 5;
+            state.pomodoro.long = parseInt(document.getElementById('inp-long').value) || 15;
+            state.pomodoro.intervals = parseInt(document.getElementById('inp-intervals').value) || 4;
+            resetEngine();
+            closeModals();
+        });
+
+        document.getElementById('btn-timer-save').addEventListener('click', () => {
+            state.timer.h = parseInt(document.getElementById('inp-timer-h').value) || 0;
+            state.timer.m = parseInt(document.getElementById('inp-timer-m').value) || 0;
+            state.timer.s = parseInt(document.getElementById('inp-timer-s').value) || 0;
+            resetEngine();
+            closeModals();
+        });
+
+        const updatePomoUI = () => {
+            document.getElementById('pomo-status').innerText = state.pomodoro.phase.replace('-', ' ').toUpperCase();
+            document.getElementById('pomo-interval').innerText = state.pomodoro.currInterval;
+            document.getElementById('pomo-status').style.color = 
+                state.pomodoro.phase === 'work' ? 'var(--text-color)' : 'var(--accent)';
+        };
+
+        const themeDots = document.querySelectorAll('.theme-dot');
+        themeDots.forEach(dot => {
+            dot.addEventListener('click', (e) => {
+                const theme = e.target.dataset.setTheme;
+                document.body.setAttribute('data-theme', theme);
+                themeDots.forEach(d => d.classList.remove('active'));
+                e.target.classList.add('active');
+                if(statsChart) renderChart(); // Update chart on theme change
+            });
+        });
+
+        tick();
+        if(!loopInterval) loopInterval = setInterval(tick, 1000);
+
+    </script>
+</body>
+</html>
