@@ -9,7 +9,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* Default Dark Theme - Pure Black */
             --bg: #000000;
             --ui-bg: #111111;
             --card-bg: #1a1a1a;
@@ -72,7 +71,6 @@
             margin: 0;
         }
 
-        /* UI Elements */
         .nav-link {
             color: var(--ui-text);
             transition: color 0.3s ease;
@@ -123,7 +121,134 @@
             border-color: var(--accent);
         }
 
-        /* Flip Clock Core CSS */
+        .floating-widget {
+            position: fixed;
+            right: 22px;
+            top: 22px;
+            width: min(220px, 32vw);
+            min-width: 180px;
+            z-index: 70;
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            background: rgba(17, 17, 17, 0.72);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            user-select: none;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .floating-widget.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-8px);
+        }
+
+        .floating-widget.dragging {
+            cursor: grabbing;
+        }
+
+        .widget-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px 6px;
+            border-bottom: 1px solid var(--line);
+            cursor: grab;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .widget-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 10px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--ui-text);
+        }
+
+        .widget-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px 6px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--ui-text-active);
+            letter-spacing: 0.12em;
+        }
+
+        .widget-close {
+            border: 0;
+            background: transparent;
+            color: var(--ui-text);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            font-size: 18px;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .widget-body {
+            padding: 10px 12px 12px;
+            cursor: pointer;
+        }
+
+        .widget-mode {
+            display: block;
+            text-align: center;
+            font-size: 10px;
+            letter-spacing: 0.2em;
+            color: var(--ui-text);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .widget-time {
+            text-align: center;
+            font-family: 'Oswald', sans-serif;
+            font-size: clamp(1.5rem, 3vw, 2.2rem);
+            line-height: 1;
+            letter-spacing: 0.08em;
+            color: var(--ui-text-active);
+            padding: 4px 0 10px;
+        }
+
+        .widget-controls {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .widget-btn {
+            appearance: none;
+            border: 1px solid var(--line);
+            background: var(--ui-bg);
+            color: var(--ui-text-active);
+            border-radius: 999px;
+            padding: 7px 12px;
+            font-size: 10px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .widget-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .widget-btn.primary {
+            background: var(--accent);
+            color: var(--bg);
+            border-color: transparent;
+        }
+
         .clock-container {
             display: flex;
             align-items: center;
@@ -217,13 +342,12 @@
             z-index: 2;
             transform: rotateX(90deg);
             transition: transform 0.3s ease-out;
-            transition-delay: 0.3s; /* Wait for top to finish */
+            transition-delay: 0.3s;
         }
 
         .flipper.top-half.flip-down { transform: rotateX(-90deg); }
         .flipper.bottom-half.flip-down { transform: rotateX(0deg); }
 
-        /* Theme Switcher Dots */
         .theme-dot {
             width: 20px;
             height: 20px;
@@ -237,8 +361,6 @@
     </style>
 </head>
 <body>
-
-    <!-- Header / Navigation -->
     <nav class="absolute top-8 w-full flex justify-center gap-6 text-sm tracking-widest font-medium z-10">
         <button class="nav-link active uppercase" data-mode="clock">Clock</button>
         <button class="nav-link uppercase" data-mode="pomodoro">Pomodoro</button>
@@ -247,20 +369,33 @@
         <button class="nav-link uppercase" data-mode="stats" id="nav-stats">Stats</button>
     </nav>
 
-    <!-- Main Clock & Controls Area -->
+    <div id="floating-widget" class="floating-widget" aria-live="polite">
+        <div class="widget-header" id="widget-drag-handle">
+            <div class="widget-meta">
+                <span class="widget-badge">Live</span>
+                <span id="widget-mode">Clock</span>
+            </div>
+            <button id="widget-close" class="widget-close" type="button" aria-label="Hide floating timer">×</button>
+        </div>
+        <div class="widget-body" id="widget-body">
+            <span class="widget-mode" id="widget-mode-label">Clock</span>
+            <div id="widget-time" class="widget-time">00:00:00</div>
+            <div class="widget-controls">
+                <button id="widget-toggle" class="widget-btn primary" type="button">Pause</button>
+                <button id="widget-cycle" class="widget-btn" type="button">Mode</button>
+            </div>
+        </div>
+    </div>
+
     <div class="flex-1 flex flex-col items-center justify-center relative w-full h-full">
-        
-        <!-- End Time Indicator -->
         <div id="end-time-indicator" class="hidden mb-2 text-sm font-medium tracking-wider text-center w-full z-10 opacity-70 transition-all duration-300" style="color: var(--ui-text-active);">
             ENDS AT <span id="end-time-text">--:--</span>
         </div>
 
-        <!-- Pomodoro Phase Indicator -->
         <div id="pomodoro-indicator" class="hidden mb-6 text-sm font-medium tracking-wider text-center w-full z-10 opacity-70 transition-all duration-300">
             <span id="pomo-status">WORK</span> • INTERVAL <span id="pomo-interval">1</span>/4
         </div>
 
-        <!-- Clock Container -->
         <div id="clock-wrapper" class="clock-container">
             <div id="h1"></div>
             <div id="h2"></div>
@@ -272,24 +407,22 @@
             <div id="s2"></div>
         </div>
 
-        <!-- Dynamic Controls (Timer, Stopwatch, Pomodoro) -->
         <div id="controls" class="hidden mt-10 flex gap-4 z-10 transition-all duration-300">
             <button id="btn-start" class="btn px-6 py-2 rounded-full font-bold tracking-widest uppercase">Start</button>
             <button id="btn-pause" class="btn hidden px-6 py-2 rounded-full font-bold tracking-widest uppercase">Pause</button>
             <button id="btn-reset" class="btn px-6 py-2 rounded-full font-bold tracking-widest uppercase">Reset</button>
             <button id="btn-settings" class="btn px-4 py-2 rounded-full hidden" title="Settings">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.012c1.54-.823 3.336.82 2.514 2.514a1.724 1.724 0 001.013 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.012 2.573c.823 1.54-.82 3.336-2.514 2.514a1.724 1.724 0 00-2.573 1.013c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.012c-1.54.823-3.336-.82-2.514-2.514a1.724 1.724 0 00-1.013-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.012-2.573c-.823-1.54.82-3.336 2.514-2.514a1.724 1.724 0 002.573-1.013z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15.5A3.5 3.5 0 1012 8.5a3.5 3.5 0 000 7z"></path></svg>
             </button>
         </div>
     </div>
 
-    <!-- Theme Switcher & Global Controls -->
     <div class="absolute bottom-8 right-8 flex gap-3 z-10 items-center">
         <button id="btn-fullscreen" class="btn p-2 rounded-full mr-1 hover:text-white" title="Toggle Fullscreen">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 3H3v5M3 3l5 5M16 3h5v5M21 3l-5 5M8 21H3v-5M3 21l5-5M16 21h5v-5M21 21l-5-5"></path></svg>
         </button>
         <button id="btn-global-settings" class="btn p-2 rounded-full mr-2 hover:text-white" title="Appearance Settings">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.012c1.54-.823 3.336.82 2.514 2.514a1.724 1.724 0 001.013 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.012 2.573c.823 1.54-.82 3.336-2.514 2.514a1.724 1.724 0 00-2.573 1.013c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.012c-1.54.823-3.336-.82-2.514-2.514a1.724 1.724 0 00-1.013-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.012-2.573c-.823-1.54.82-3.336 2.514-2.514a1.724 1.724 0 002.573-1.013z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15.5A3.5 3.5 0 1012 8.5a3.5 3.5 0 000 7z"></path></svg>
         </button>
         <div class="theme-dot active" style="background: #000000; border-color: #fff;" data-set-theme="dark" title="Dark"></div>
         <div class="theme-dot" style="background: #f4f4f5; border-color: #333;" data-set-theme="light" title="Light"></div>
@@ -297,7 +430,6 @@
         <div class="theme-dot" style="background: #d9d0b4; border-color: #4a3b2c;" data-set-theme="vintage" title="Vintage"></div>
     </div>
 
-    <!-- Pomodoro Settings Modal -->
     <div id="modal-pomodoro" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center">
         <div class="modal-content rounded-xl p-8 max-w-sm w-full mx-4 shadow-2xl">
             <h2 class="text-xl font-bold mb-6 text-center tracking-wide uppercase">Pomodoro Settings</h2>
@@ -326,7 +458,6 @@
         </div>
     </div>
 
-    <!-- Timer Settings Modal -->
     <div id="modal-timer" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center">
         <div class="modal-content rounded-xl p-8 max-w-sm w-full mx-4 shadow-2xl">
             <h2 class="text-xl font-bold mb-6 text-center tracking-wide uppercase">Timer Settings</h2>
@@ -351,7 +482,6 @@
         </div>
     </div>
 
-    <!-- Global Appearance Settings Modal -->
     <div id="modal-global-settings" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center">
         <div class="modal-content rounded-xl p-8 max-w-sm w-full mx-4 shadow-2xl">
             <h2 class="text-xl font-bold mb-6 text-center tracking-wide uppercase">Appearance</h2>
@@ -370,7 +500,6 @@
         </div>
     </div>
 
-    <!-- Stats Modal -->
     <div id="modal-stats" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center">
         <div class="modal-content rounded-[1.5rem] p-8 max-w-2xl w-full mx-4 shadow-2xl">
             <h2 class="text-xl font-bold mb-6 text-center tracking-wide uppercase">Study Statistics</h2>
@@ -393,18 +522,15 @@
         </div>
     </div>
 
-    <!-- Toast Notification -->
-    <div id="toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full text-sm font-medium z-[100] opacity-0 transition-opacity duration-300 pointer-events-none shadow-xl" style="background: var(--ui-bg); color: var(--ui-text-active); border: 1px solid var(--line);"></div>
+    <div id="toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full text-sm font-medium z-[100] opacity-0 transition-opacity duration-300 pointer-events-none shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style="background: rgba(17,17,17,0.9); color: var(--ui-text-active);"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- Firebase Init & Auth ---
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-        
         let db, auth, userId;
         let sessionsData = [];
 
@@ -412,7 +538,6 @@
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             auth = getAuth(app);
-            
             const initAuth = async () => {
                 try {
                     if (typeof __initial_auth_token !== 'undefined') {
@@ -429,7 +554,6 @@
             initAuth();
         }
 
-        // --- Stats Logic ---
         let statsChart = null;
         let currentStatView = 'daily';
 
@@ -445,9 +569,9 @@
         };
 
         const logSession = async (duration, modeToLog) => {
-            if (duration < 1) return; // Track anything 1 second or more
+            if (duration < 1) return;
             const newSession = {
-                duration: duration, // in seconds
+                duration: duration,
                 timestamp: Date.now(),
                 mode: modeToLog
             };
@@ -460,7 +584,7 @@
                 }
             }
             sessionsData.push(newSession);
-            renderChart(); // Update chart immediately
+            renderChart();
         };
 
         const renderChart = () => {
@@ -478,21 +602,18 @@
                 } else {
                     key = date.getFullYear().toString();
                 }
-                
                 if (!aggregated[key]) aggregated[key] = { pomodoro: 0, timer: 0, stopwatch: 0 };
-                
-                const mode = session.mode || 'pomodoro'; // Backward compatible
+                const mode = session.mode || 'pomodoro';
                 if (aggregated[key][mode] !== undefined) {
                     aggregated[key][mode] += session.duration;
                 }
             });
 
-            // Sort chronologically
             const sortedKeys = Object.keys(aggregated).sort((a, b) => {
                 if (currentStatView === 'yearly') return parseInt(a) - parseInt(b);
-                return new Date(a) - new Date(b); 
+                return new Date(a) - new Date(b);
             });
-            
+
             const limit = currentStatView === 'daily' ? 7 : (currentStatView === 'monthly' ? 12 : 5);
             const displayKeys = sortedKeys.slice(-limit);
 
@@ -510,50 +631,19 @@
                 data: {
                     labels: labels,
                     datasets: [
-                        {
-                            label: 'Pomodoro',
-                            data: pomoData,
-                            backgroundColor: chartColor,
-                            borderRadius: 4,
-                            maxBarThickness: 12
-                        },
-                        {
-                            label: 'Timer',
-                            data: timerData,
-                            backgroundColor: '#60a5fa', // Distinguishable Blue
-                            borderRadius: 4,
-                            maxBarThickness: 12
-                        },
-                        {
-                            label: 'Stopwatch',
-                            data: stopData,
-                            backgroundColor: '#34d399', // Distinguishable Green
-                            borderRadius: 4,
-                            maxBarThickness: 12
-                        }
+                        { label: 'Pomodoro', data: pomoData, backgroundColor: chartColor, borderRadius: 4, maxBarThickness: 12 },
+                        { label: 'Timer', data: timerData, backgroundColor: '#60a5fa', borderRadius: 4, maxBarThickness: 12 },
+                        { label: 'Stopwatch', data: stopData, backgroundColor: '#34d399', borderRadius: 4, maxBarThickness: 12 }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        x: { 
-                            ticks: { color: textColor }, 
-                            grid: { display: false } 
-                        },
-                        y: { 
-                            beginAtZero: true, 
-                            ticks: { color: textColor }, 
-                            grid: { color: gridColor },
-                            title: { display: true, text: 'Minutes', color: textColor }
-                        }
+                        x: { ticks: { color: textColor }, grid: { display: false } },
+                        y: { beginAtZero: true, ticks: { color: textColor }, grid: { color: gridColor }, title: { display: true, text: 'Minutes', color: textColor } }
                     },
-                    plugins: { 
-                        legend: { 
-                            display: true,
-                            labels: { color: textColor, boxWidth: 12 }
-                        } 
-                    }
+                    plugins: { legend: { display: true, labels: { color: textColor, boxWidth: 12 } } }
                 }
             });
         };
@@ -561,7 +651,7 @@
         const setStatView = (view) => {
             currentStatView = view;
             document.querySelectorAll('#modal-stats .btn').forEach(b => {
-                if(b.id.startsWith('btn-stat-')) {
+                if (b.id.startsWith('btn-stat-')) {
                     b.style.background = 'var(--ui-bg)';
                     b.style.color = 'var(--ui-text-active)';
                 }
@@ -575,7 +665,6 @@
         document.getElementById('btn-stat-daily').addEventListener('click', () => setStatView('daily'));
         document.getElementById('btn-stat-monthly').addEventListener('click', () => setStatView('monthly'));
         document.getElementById('btn-stat-yearly').addEventListener('click', () => setStatView('yearly'));
-        
         document.getElementById('nav-stats').addEventListener('click', () => {
             document.getElementById('modal-stats').classList.remove('hidden');
             renderChart();
@@ -589,9 +678,7 @@
                 try {
                     const toDelete = sessionsData.filter(s => (s.mode || 'pomodoro') === modeToClear);
                     for (const session of toDelete) {
-                        if (session.id) {
-                            await deleteDoc(doc(db, 'artifacts', appId, 'users', userId, 'study_sessions', session.id));
-                        }
+                        if (session.id) await deleteDoc(doc(db, 'artifacts', appId, 'users', userId, 'study_sessions', session.id));
                     }
                 } catch (e) {
                     console.error("Error clearing data", e);
@@ -599,16 +686,13 @@
             }
             sessionsData = sessionsData.filter(s => (s.mode || 'pomodoro') !== modeToClear);
             renderChart();
-            if (typeof showToast !== 'undefined') {
-                showToast(`${modeToClear.charAt(0).toUpperCase() + modeToClear.slice(1)} data cleared.`);
-            }
+            showToast(`${modeToClear.charAt(0).toUpperCase() + modeToClear.slice(1)} data cleared.`);
         };
 
         document.getElementById('btn-clear-pomo').addEventListener('click', () => clearDataByMode('pomodoro'));
         document.getElementById('btn-clear-timer').addEventListener('click', () => clearDataByMode('timer'));
         document.getElementById('btn-clear-stopwatch').addEventListener('click', () => clearDataByMode('stopwatch'));
 
-        // --- Core FlipDigit Component ---
         class FlipDigit {
             constructor(containerId) {
                 this.container = document.getElementById(containerId);
@@ -672,7 +756,6 @@
         let currentMode = 'clock';
         let loopInterval = null;
         let isRunning = false;
-        
         let sessionStartTime = null;
 
         const state = {
@@ -681,23 +764,56 @@
             stopwatch: { elapsed: 0 }
         };
 
+        const formatDurationForWidget = (totalSeconds) => {
+            const h = Math.floor(totalSeconds / 3600);
+            const m = Math.floor((totalSeconds % 3600) / 60);
+            const s = totalSeconds % 60;
+            return [h, m, s].map(v => String(v).padStart(2, '0')).join(':');
+        };
+
+        const updateFloatingWidget = () => {
+            const widgetModeEl = document.getElementById('widget-mode');
+            const widgetModeLabel = document.getElementById('widget-mode-label');
+            const widgetTimeEl = document.getElementById('widget-time');
+            const widgetToggleEl = document.getElementById('widget-toggle');
+            const modeLabel = currentMode.charAt(0).toUpperCase() + currentMode.slice(1);
+            widgetModeEl.textContent = modeLabel;
+            widgetModeLabel.textContent = modeLabel;
+
+            let value = '00:00:00';
+            if (currentMode === 'clock') {
+                const now = new Date();
+                const h = now.getHours() % 12 || 12;
+                const m = now.getMinutes();
+                const s = now.getSeconds();
+                value = formatDurationForWidget((h * 3600) + (m * 60) + s);
+            } else if (currentMode === 'stopwatch') {
+                value = formatDurationForWidget(state.stopwatch.elapsed);
+            } else if (currentMode === 'timer') {
+                value = formatDurationForWidget(state.timer.timeLeft);
+            } else if (currentMode === 'pomodoro') {
+                value = formatDurationForWidget(state.pomodoro.timeLeft);
+            }
+
+            widgetTimeEl.textContent = value;
+            widgetToggleEl.textContent = isRunning ? 'Pause' : 'Start';
+            widgetToggleEl.classList.toggle('primary', isRunning);
+        };
+
         const updateEndTimeUI = () => {
             const endTimeIndicator = document.getElementById('end-time-indicator');
             if (!isRunning || (currentMode !== 'timer' && currentMode !== 'pomodoro')) {
                 endTimeIndicator.classList.add('hidden');
                 return;
             }
-            
             let timeLeft = 0;
             if (currentMode === 'timer') timeLeft = state.timer.timeLeft;
             if (currentMode === 'pomodoro') timeLeft = state.pomodoro.timeLeft;
-
             const endDate = new Date(Date.now() + timeLeft * 1000);
             let h = endDate.getHours();
             const m = endDate.getMinutes().toString().padStart(2, '0');
             const ampm = h >= 12 ? 'PM' : 'AM';
             h = h % 12 || 12;
-
             document.getElementById('end-time-text').innerText = `${h}:${m} ${ampm}`;
             endTimeIndicator.classList.remove('hidden');
         };
@@ -708,13 +824,11 @@
                 let h = now.getHours();
                 h = h % 12 || 12;
                 updateClockDisplay(h, now.getMinutes(), now.getSeconds());
-            } 
-            else if (currentMode === 'stopwatch' && isRunning) {
+            } else if (currentMode === 'stopwatch' && isRunning) {
                 state.stopwatch.elapsed++;
                 const s = state.stopwatch.elapsed;
                 updateClockDisplay(Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60);
-            }
-            else if (currentMode === 'timer' && isRunning) {
+            } else if (currentMode === 'timer' && isRunning) {
                 if (state.timer.timeLeft > 0) {
                     state.timer.timeLeft--;
                     const s = state.timer.timeLeft;
@@ -723,8 +837,7 @@
                     handleSessionEnd();
                     stopEngine();
                 }
-            }
-            else if (currentMode === 'pomodoro' && isRunning) {
+            } else if (currentMode === 'pomodoro' && isRunning) {
                 if (state.pomodoro.timeLeft > 0) {
                     state.pomodoro.timeLeft--;
                 } else {
@@ -750,34 +863,31 @@
                     }
                     updatePomoUI();
                     updateEndTimeUI();
-                    if (isRunning && p.phase === 'work') {
-                        sessionStartTime = Date.now();
-                    }
+                    if (isRunning && p.phase === 'work') sessionStartTime = Date.now();
                 }
                 const s = state.pomodoro.timeLeft;
                 updateClockDisplay(Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60);
             }
+            updateFloatingWidget();
         };
 
         const handleSessionEnd = () => {
             if (sessionStartTime && isRunning) {
                 const duration = Math.floor((Date.now() - sessionStartTime) / 1000);
                 const modeToLog = currentMode === 'pomodoro' ? (state.pomodoro.phase === 'work' ? 'pomodoro' : 'break') : currentMode;
-                if (modeToLog !== 'break') {
-                    logSession(duration, modeToLog);
-                }
+                if (modeToLog !== 'break') logSession(duration, modeToLog);
             }
             sessionStartTime = null;
         };
 
         const startEngine = () => {
-            if(!loopInterval) loopInterval = setInterval(tick, 1000);
+            if (!loopInterval) loopInterval = setInterval(tick, 1000);
             isRunning = true;
             document.getElementById('btn-start').classList.add('hidden');
             document.getElementById('btn-pause').classList.remove('hidden');
-            
             sessionStartTime = Date.now();
             updateEndTimeUI();
+            updateFloatingWidget();
         };
 
         const stopEngine = () => {
@@ -786,6 +896,7 @@
             document.getElementById('btn-start').classList.remove('hidden');
             document.getElementById('btn-pause').classList.add('hidden');
             updateEndTimeUI();
+            updateFloatingWidget();
         };
 
         const resetEngine = () => {
@@ -803,6 +914,7 @@
                 updatePomoUI();
                 updateClockDisplay(Math.floor(state.pomodoro.timeLeft / 3600), Math.floor((state.pomodoro.timeLeft % 3600) / 60), state.pomodoro.timeLeft % 60);
             }
+            updateFloatingWidget();
         };
 
         const navLinks = document.querySelectorAll('.nav-link');
@@ -814,16 +926,14 @@
             if (mode === 'stats') return;
             currentMode = mode;
             navLinks.forEach(link => {
-                if (link.dataset.mode !== 'stats') {
-                    link.classList.toggle('active', link.dataset.mode === mode);
-                }
+                if (link.dataset.mode !== 'stats') link.classList.toggle('active', link.dataset.mode === mode);
             });
             stopEngine();
             if (mode === 'clock') {
                 controls.classList.add('hidden');
                 pomoIndicator.classList.add('hidden');
                 tick();
-                if(!loopInterval) loopInterval = setInterval(tick, 1000);
+                if (!loopInterval) loopInterval = setInterval(tick, 1000);
             } else {
                 controls.classList.remove('hidden');
                 clearInterval(loopInterval);
@@ -843,6 +953,7 @@
                     }
                 }
             }
+            updateFloatingWidget();
         };
 
         navLinks.forEach(link => {
@@ -854,7 +965,7 @@
         document.getElementById('btn-start').addEventListener('click', startEngine);
         document.getElementById('btn-pause').addEventListener('click', stopEngine);
         document.getElementById('btn-reset').addEventListener('click', resetEngine);
-        
+
         btnSettings.addEventListener('click', () => {
             if (currentMode === 'pomodoro') document.getElementById('modal-pomodoro').classList.remove('hidden');
             if (currentMode === 'timer') document.getElementById('modal-timer').classList.remove('hidden');
@@ -864,11 +975,10 @@
             document.getElementById('modal-pomodoro').classList.add('hidden');
             document.getElementById('modal-timer').classList.add('hidden');
         };
-        
+
         document.getElementById('btn-pomo-cancel').addEventListener('click', closeModals);
         document.getElementById('btn-timer-cancel').addEventListener('click', closeModals);
 
-        // Global Settings & Fullscreen Logic
         const btnGlobalSettings = document.getElementById('btn-global-settings');
         const modalGlobalSettings = document.getElementById('modal-global-settings');
         const btnGlobalClose = document.getElementById('btn-global-close');
@@ -885,14 +995,8 @@
             }
         };
 
-        btnGlobalSettings.addEventListener('click', () => {
-            modalGlobalSettings.classList.remove('hidden');
-        });
-        
-        btnGlobalClose.addEventListener('click', () => {
-            modalGlobalSettings.classList.add('hidden');
-        });
-
+        btnGlobalSettings.addEventListener('click', () => modalGlobalSettings.classList.remove('hidden'));
+        btnGlobalClose.addEventListener('click', () => modalGlobalSettings.classList.add('hidden'));
         inpClockScale.addEventListener('input', (e) => {
             const scale = e.target.value;
             document.documentElement.style.setProperty('--clock-scale', scale);
@@ -902,16 +1006,12 @@
         btnFullscreen.addEventListener('click', () => {
             if (!document.fullscreenElement) {
                 if (document.documentElement.requestFullscreen) {
-                    document.documentElement.requestFullscreen().catch(err => {
-                        showToast("Fullscreen disabled in preview environment.");
-                    });
+                    document.documentElement.requestFullscreen().catch(() => showToast("Fullscreen disabled in preview environment."));
                 } else {
                     showToast("Fullscreen API not supported.");
                 }
             } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                }
+                if (document.exitFullscreen) document.exitFullscreen();
             }
         });
 
@@ -935,8 +1035,6 @@
         const updatePomoUI = () => {
             document.getElementById('pomo-status').innerText = state.pomodoro.phase.replace('-', ' ').toUpperCase();
             document.getElementById('pomo-interval').innerText = state.pomodoro.currInterval;
-            document.getElementById('pomo-status').style.color = 
-                state.pomodoro.phase === 'work' ? 'var(--text-color)' : 'var(--accent)';
         };
 
         const themeDots = document.querySelectorAll('.theme-dot');
@@ -946,13 +1044,73 @@
                 document.body.setAttribute('data-theme', theme);
                 themeDots.forEach(d => d.classList.remove('active'));
                 e.target.classList.add('active');
-                if(statsChart) renderChart(); // Update chart on theme change
+                if (statsChart) renderChart();
             });
         });
 
-        tick();
-        if(!loopInterval) loopInterval = setInterval(tick, 1000);
+        const floatingWidget = document.getElementById('floating-widget');
+        const widgetDragHandle = document.getElementById('widget-drag-handle');
+        const widgetBody = document.getElementById('widget-body');
+        const widgetToggle = document.getElementById('widget-toggle');
+        const widgetCycle = document.getElementById('widget-cycle');
+        const widgetClose = document.getElementById('widget-close');
+        const modeOrder = ['clock', 'timer', 'pomodoro', 'stopwatch'];
+        let widgetDrag = { active: false, offsetX: 0, offsetY: 0 };
 
+        widgetToggle.addEventListener('click', () => {
+            if (isRunning) stopEngine();
+            else startEngine();
+        });
+
+        widgetCycle.addEventListener('click', () => {
+            const currentIndex = modeOrder.indexOf(currentMode);
+            const nextMode = modeOrder[(currentIndex + 1) % modeOrder.length];
+            switchMode(nextMode);
+        });
+
+        widgetBody.addEventListener('click', (e) => {
+            if (e.target.closest('button')) return;
+            if (widgetDrag.active) return;
+            if (isRunning) stopEngine();
+            else startEngine();
+        });
+
+        widgetClose.addEventListener('click', () => floatingWidget.classList.add('hidden'));
+        window.addEventListener('blur', () => floatingWidget.classList.remove('hidden'));
+
+        widgetDragHandle.addEventListener('pointerdown', (event) => {
+            if (event.target.closest('button')) return;
+            widgetDrag.active = true;
+            floatingWidget.classList.add('dragging');
+            const rect = floatingWidget.getBoundingClientRect();
+            widgetDrag.offsetX = event.clientX - rect.left;
+            widgetDrag.offsetY = event.clientY - rect.top;
+            widgetDragHandle.setPointerCapture(event.pointerId);
+        });
+
+        widgetDragHandle.addEventListener('pointermove', (event) => {
+            if (!widgetDrag.active) return;
+            const x = Math.min(window.innerWidth - floatingWidget.offsetWidth - 8, Math.max(8, event.clientX - widgetDrag.offsetX));
+            const y = Math.min(window.innerHeight - floatingWidget.offsetHeight - 8, Math.max(8, event.clientY - widgetDrag.offsetY));
+            floatingWidget.style.left = `${x}px`;
+            floatingWidget.style.right = 'auto';
+            floatingWidget.style.top = `${y}px`;
+            floatingWidget.style.bottom = 'auto';
+        });
+
+        widgetDragHandle.addEventListener('pointerup', () => {
+            widgetDrag.active = false;
+            floatingWidget.classList.remove('dragging');
+        });
+
+        widgetDragHandle.addEventListener('pointerleave', () => {
+            widgetDrag.active = false;
+            floatingWidget.classList.remove('dragging');
+        });
+
+        tick();
+        updateFloatingWidget();
+        if (!loopInterval) loopInterval = setInterval(tick, 1000);
     </script>
 </body>
 </html>
