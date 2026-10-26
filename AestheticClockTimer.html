@@ -1,1127 +1,1146 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minimal Flip Clock</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg: #000000;
-            --ui-bg: #111111;
-            --card-bg: #1a1a1a;
-            --text-color: #f0f0f0;
-            --ui-text: #666666;
-            --ui-text-active: #ffffff;
-            --shadow: 0 10px 30px rgba(0,0,0,0.8);
-            --line: #222222;
-            --accent: #ffffff;
-            --clock-scale: 1;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Aesthetic Clock Timer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #000000;
+      --ui-bg: #111111;
+      --card-bg: #1a1a1a;
+      --text-color: #f0f0f0;
+      --ui-text: #666666;
+      --ui-text-active: #ffffff;
+      --shadow: 0 10px 30px rgba(0,0,0,0.8);
+      --line: #222222;
+      --accent: #ffffff;
+      --clock-scale: 1;
+    }
 
-        [data-theme="light"] {
-            --bg: #f4f4f5;
-            --ui-bg: #e4e4e7;
-            --card-bg: #ffffff;
-            --text-color: #333333;
-            --ui-text: #71717a;
-            --ui-text-active: #000000;
-            --shadow: 0 10px 30px rgba(0,0,0,0.08);
-            --line: #e5e5e5;
-            --accent: #000000;
-        }
+    [data-theme="light"] {
+      --bg: #f4f4f5;
+      --ui-bg: #e4e4e7;
+      --card-bg: #ffffff;
+      --text-color: #333333;
+      --ui-text: #71717a;
+      --ui-text-active: #000000;
+      --shadow: 0 10px 30px rgba(0,0,0,0.08);
+      --line: #e5e5e5;
+      --accent: #000000;
+    }
 
-        [data-theme="neon"] {
-            --bg: #050505;
-            --ui-bg: #111111;
-            --card-bg: #0a0a0a;
-            --text-color: #00ff00;
-            --ui-text: #005500;
-            --ui-text-active: #00ff00;
-            --shadow: 0 0 20px rgba(0, 255, 0, 0.2);
-            --line: #002200;
-            --accent: #00ff00;
-        }
+    [data-theme="neon"] {
+      --bg: #050505;
+      --ui-bg: #111111;
+      --card-bg: #0a0a0a;
+      --text-color: #00ff00;
+      --ui-text: #005500;
+      --ui-text-active: #00ff00;
+      --shadow: 0 0 20px rgba(0,255,0,0.2);
+      --line: #002200;
+      --accent: #00ff00;
+    }
 
-        [data-theme="vintage"] {
-            --bg: #d9d0b4;
-            --ui-bg: #cbbd9b;
-            --card-bg: #e6dfc8;
-            --text-color: #4a3b2c;
-            --ui-text: #7a6b5c;
-            --ui-text-active: #3a2b1c;
-            --shadow: 0 10px 25px rgba(74, 59, 44, 0.2);
-            --line: #c4ba9f;
-            --accent: #4a3b2c;
-        }
+    [data-theme="vintage"] {
+      --bg: #d9d0b4;
+      --ui-bg: #cbbd9b;
+      --card-bg: #e6dfc8;
+      --text-color: #4a3b2c;
+      --ui-text: #7a6b5c;
+      --ui-text-active: #3a2b1c;
+      --shadow: 0 10px 25px rgba(74,59,44,0.2);
+      --line: #c4ba9f;
+      --accent: #4a3b2c;
+    }
 
-        body {
-            background-color: var(--bg);
-            color: var(--ui-text-active);
-            font-family: 'Inter', sans-serif;
-            transition: background-color 0.5s ease, color 0.5s ease;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-        }
+    * { box-sizing: border-box; }
 
-        .nav-link {
-            color: var(--ui-text);
-            transition: color 0.3s ease;
-            position: relative;
-        }
-        .nav-link:hover { color: var(--ui-text-active); }
-        .nav-link.active { color: var(--ui-text-active); }
-        .nav-link.active::after {
-            content: '';
-            position: absolute;
-            bottom: -4px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 20px;
-            height: 2px;
-            background-color: var(--accent);
-            border-radius: 2px;
-        }
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: var(--bg);
+      color: var(--ui-text-active);
+      font-family: 'Inter', sans-serif;
+      transition: background-color 0.5s ease, color 0.5s ease;
+      overflow: hidden;
+    }
 
-        .btn {
-            background-color: var(--ui-bg);
-            color: var(--ui-text-active);
-            border: 1px solid var(--line);
-            transition: all 0.2s ease;
-        }
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-        .btn:active { transform: translateY(0); }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
 
-        .modal-overlay {
-            background-color: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(4px);
-        }
-        .modal-content {
-            background-color: var(--bg);
-            border: 1px solid var(--line);
-            color: var(--ui-text-active);
-        }
-        .modal-input {
-            background-color: var(--ui-bg);
-            color: var(--ui-text-active);
-            border: 1px solid var(--line);
-        }
-        .modal-input:focus {
-            outline: none;
-            border-color: var(--accent);
-        }
+    .nav-link {
+      color: var(--ui-text);
+      transition: color 0.2s ease;
+      position: relative;
+      cursor: pointer;
+      background: transparent;
+      border: 0;
+      font-size: 12px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 0;
+    }
 
-        .floating-widget {
-            position: fixed;
-            right: 22px;
-            top: 22px;
-            width: min(220px, 32vw);
-            min-width: 180px;
-            z-index: 70;
-            backdrop-filter: blur(18px);
-            -webkit-backdrop-filter: blur(18px);
-            background: rgba(17, 17, 17, 0.72);
-            border: 1px solid var(--line);
-            border-radius: 18px;
-            box-shadow: var(--shadow);
-            overflow: hidden;
-            user-select: none;
-            transition: opacity 0.2s ease, transform 0.2s ease;
-        }
+    .nav-link:hover { color: var(--ui-text-active); }
+    .nav-link.active { color: var(--ui-text-active); }
+    .nav-link.active::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      bottom: -6px;
+      transform: translateX(-50%);
+      width: 20px;
+      height: 2px;
+      background: var(--accent);
+      border-radius: 999px;
+    }
 
-        .floating-widget.hidden {
-            opacity: 0;
-            pointer-events: none;
-            transform: translateY(-8px);
-        }
+    .btn {
+      border: 1px solid var(--line);
+      background: var(--ui-bg);
+      color: var(--ui-text-active);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
 
-        .floating-widget.dragging {
-            cursor: grabbing;
-        }
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.68);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    .modal-overlay.hidden { display: none; }
 
-        .widget-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 12px 6px;
-            border-bottom: 1px solid var(--line);
-            cursor: grab;
-            background: rgba(255, 255, 255, 0.02);
-        }
+    .modal-content {
+      width: min(92vw, 540px);
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: var(--shadow);
+      color: var(--ui-text-active);
+    }
 
-        .widget-meta {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 10px;
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
-            color: var(--ui-text);
-        }
+    .modal-input {
+      background: var(--ui-bg);
+      border: 1px solid var(--line);
+      color: var(--ui-text-active);
+      border-radius: 10px;
+      padding: 10px 12px;
+      width: 100%;
+      outline: none;
+    }
+    .modal-input:focus {
+      border-color: var(--accent);
+    }
 
-        .widget-badge {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 4px 6px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.06);
-            color: var(--ui-text-active);
-            letter-spacing: 0.12em;
-        }
+    .floating-widget {
+      position: fixed;
+      right: 22px;
+      top: 22px;
+      width: min(220px, 32vw);
+      min-width: 180px;
+      z-index: 70;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      background: rgba(17,17,17,0.72);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      user-select: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .floating-widget.hidden { opacity: 0; pointer-events: none; transform: translateY(-8px); }
 
-        .widget-close {
-            border: 0;
-            background: transparent;
-            color: var(--ui-text);
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            font-size: 18px;
-            line-height: 1;
-            cursor: pointer;
-        }
+    .widget-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px 6px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,0.02);
+      cursor: grab;
+    }
+    .widget-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ui-text);
+    }
+    .widget-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 6px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      color: var(--ui-text-active);
+      letter-spacing: 0.12em;
+    }
+    .widget-close {
+      width: 24px;
+      height: 24px;
+      border: 0;
+      background: transparent;
+      color: var(--ui-text);
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+    }
+    .widget-body {
+      padding: 10px 12px 12px;
+      cursor: pointer;
+    }
+    .widget-mode {
+      display: block;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ui-text);
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    .widget-time {
+      text-align: center;
+      font-family: 'Oswald', sans-serif;
+      font-size: clamp(1.5rem, 3vw, 2.3rem);
+      line-height: 1;
+      letter-spacing: 0.08em;
+      color: var(--ui-text-active);
+      padding: 4px 0 10px;
+    }
+    .widget-controls {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+    }
+    .widget-btn {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: var(--ui-bg);
+      color: var(--ui-text-active);
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .widget-btn.primary {
+      background: var(--accent);
+      color: var(--bg);
+      border-color: transparent;
+    }
 
-        .widget-body {
-            padding: 10px 12px 12px;
-            cursor: pointer;
-        }
+    .clock-container {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-family: 'Oswald', sans-serif;
+      transition: gap 0.3s ease;
+    }
+    .clock-divider {
+      display: flex;
+      flex-direction: column;
+      gap: calc(clamp(10px, 2vw, 24px) * var(--clock-scale));
+      margin: 0 12px;
+    }
+    .clock-divider::before, .clock-divider::after {
+      content: '';
+      width: calc(clamp(12px, 2.5vw, 24px) * var(--clock-scale));
+      height: calc(clamp(12px, 2.5vw, 24px) * var(--clock-scale));
+      background: #555555;
+      border-radius: 50%;
+    }
 
-        .widget-mode {
-            display: block;
-            text-align: center;
-            font-size: 10px;
-            letter-spacing: 0.2em;
-            color: var(--ui-text);
-            margin-bottom: 8px;
-            text-transform: uppercase;
-        }
+    .flip-card {
+      position: relative;
+      width: calc(clamp(70px, 12vw, 150px) * var(--clock-scale));
+      height: calc(clamp(110px, 20vw, 240px) * var(--clock-scale));
+      border-radius: 1.5rem;
+      background: var(--bg);
+      box-shadow: var(--shadow);
+      perspective: 1000px;
+      overflow: hidden;
+    }
+    .half {
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: 50%;
+      background: var(--card-bg);
+      color: var(--text-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      transform-style: preserve-3d;
+      backface-visibility: hidden;
+      z-index: 1;
+    }
+    .top-half { top: 0; border-top-left-radius: 1.5rem; border-top-right-radius: 1.5rem; border-bottom: 1px solid var(--line); }
+    .bottom-half { bottom: 0; border-bottom-left-radius: 1.5rem; border-bottom-right-radius: 1.5rem; }
+    .top-half .text, .bottom-half .text {
+      position: absolute;
+      width: 100%;
+      height: calc(clamp(110px, 20vw, 240px) * var(--clock-scale));
+      line-height: calc(clamp(110px, 20vw, 240px) * var(--clock-scale));
+      text-align: center;
+      font-size: calc(clamp(80px, 14vw, 170px) * var(--clock-scale));
+    }
+    .top-half .text { top: 0; }
+    .bottom-half .text { bottom: 0; }
+    .flipper.top-half, .flipper.bottom-half {
+      z-index: 2;
+      transition: transform 0.35s ease;
+    }
+    .flipper.top-half { transform-origin: bottom; }
+    .flipper.bottom-half { transform-origin: top; transform: rotateX(90deg); }
+    .flipper.top-half.flip-down { transform: rotateX(-90deg); }
+    .flipper.bottom-half.flip-down { transform: rotateX(0deg); }
 
-        .widget-time {
-            text-align: center;
-            font-family: 'Oswald', sans-serif;
-            font-size: clamp(1.5rem, 3vw, 2.2rem);
-            line-height: 1;
-            letter-spacing: 0.08em;
-            color: var(--ui-text-active);
-            padding: 4px 0 10px;
-        }
+    .theme-dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.2s ease;
+    }
+    .theme-dot:hover { transform: scale(1.2); }
+    .theme-dot.active { border-color: var(--accent); }
 
-        .widget-controls {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-        }
+    .mini-btn { font-size: 11px; padding: 8px 14px; border-radius: 999px; }
+    .icon-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--line);
+      background: var(--ui-bg);
+      color: var(--ui-text-active);
+      cursor: pointer;
+    }
 
-        .widget-btn {
-            appearance: none;
-            border: 1px solid var(--line);
-            background: var(--ui-bg);
-            color: var(--ui-text-active);
-            border-radius: 999px;
-            padding: 7px 12px;
-            font-size: 10px;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .widget-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        .widget-btn.primary {
-            background: var(--accent);
-            color: var(--bg);
-            border-color: transparent;
-        }
-
-        .clock-container {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-family: 'Oswald', sans-serif;
-            transition: gap 0.3s ease;
-        }
-
-        .clock-divider {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            gap: calc(clamp(10px, 2vw, 24px) * var(--clock-scale));
-            margin: 0 12px;
-            transition: gap 0.3s ease;
-        }
-
-        .clock-divider::before, .clock-divider::after {
-            content: '';
-            width: calc(clamp(12px, 2.5vw, 24px) * var(--clock-scale));
-            height: calc(clamp(12px, 2.5vw, 24px) * var(--clock-scale));
-            background-color: #555555;
-            border-radius: 50%;
-            transition: width 0.3s ease, height 0.3s ease;
-        }
-
-        .flip-card {
-            position: relative;
-            width: calc(clamp(70px, 12vw, 150px) * var(--clock-scale));
-            height: calc(clamp(110px, 20vw, 240px) * var(--clock-scale));
-            font-size: calc(clamp(80px, 14vw, 170px) * var(--clock-scale));
-            border-radius: 1.5rem;
-            perspective: 1000px;
-            box-shadow: var(--shadow);
-            background-color: var(--bg);
-            transition: width 0.3s ease, height 0.3s ease, font-size 0.3s ease;
-        }
-
-        .half {
-            position: absolute;
-            left: 0;
-            width: 100%;
-            height: 50%;
-            background-color: var(--card-bg);
-            color: var(--text-color);
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            transform-style: preserve-3d;
-            backface-visibility: hidden;
-        }
-
-        .top-half {
-            top: 0;
-            transform-origin: bottom;
-            border-top-left-radius: 1.5rem;
-            border-top-right-radius: 1.5rem;
-            border-bottom: 1px solid var(--line);
-        }
-
-        .bottom-half {
-            bottom: 0;
-            transform-origin: top;
-            border-bottom-left-radius: 1.5rem;
-            border-bottom-right-radius: 1.5rem;
-        }
-
-        .top-half .text {
-            position: absolute;
-            top: 0;
-            height: calc(clamp(110px, 20vw, 240px) * var(--clock-scale));
-            line-height: calc(clamp(110px, 20vw, 240px) * var(--clock-scale));
-            transition: height 0.3s ease, line-height 0.3s ease;
-        }
-
-        .bottom-half .text {
-            position: absolute;
-            bottom: 0;
-            height: calc(clamp(110px, 20vw, 240px) * var(--clock-scale));
-            line-height: calc(clamp(110px, 20vw, 240px) * var(--clock-scale));
-            transition: height 0.3s ease, line-height 0.3s ease;
-        }
-
-        .flipper.top-half {
-            z-index: 2;
-            transition: transform 0.3s ease-in;
-        }
-
-        .flipper.bottom-half {
-            z-index: 2;
-            transform: rotateX(90deg);
-            transition: transform 0.3s ease-out;
-            transition-delay: 0.3s;
-        }
-
-        .flipper.top-half.flip-down { transform: rotateX(-90deg); }
-        .flipper.bottom-half.flip-down { transform: rotateX(0deg); }
-
-        .theme-dot {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            cursor: pointer;
-            border: 2px solid transparent;
-            transition: transform 0.2s ease;
-        }
-        .theme-dot:hover { transform: scale(1.2); }
-        .theme-dot.active { border-color: var(--accent); }
-    </style>
+    .hidden { display: none !important; }
+    .toast {
+      position: fixed;
+      left: 50%;
+      top: 20px;
+      transform: translateX(-50%);
+      background: rgba(17,17,17,0.9);
+      color: var(--ui-text-active);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 10px 18px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 200;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .toast.show { opacity: 1; }
+  </style>
 </head>
-<body>
-    <nav class="absolute top-8 w-full flex justify-center gap-6 text-sm tracking-widest font-medium z-10">
-        <button class="nav-link active uppercase" data-mode="clock">Clock</button>
-        <button class="nav-link uppercase" data-mode="pomodoro">Pomodoro</button>
-        <button class="nav-link uppercase" data-mode="timer">Timer</button>
-        <button class="nav-link uppercase" data-mode="stopwatch">Stopwatch</button>
-        <button class="nav-link uppercase" data-mode="stats" id="nav-stats">Stats</button>
-    </nav>
+<body data-theme="dark">
+  <nav class="absolute top-8 w-full flex justify-center gap-6 z-10">
+    <button class="nav-link active" data-mode="clock">Clock</button>
+    <button class="nav-link" data-mode="pomodoro">Pomodoro</button>
+    <button class="nav-link" data-mode="timer">Timer</button>
+    <button class="nav-link" data-mode="stopwatch">Stopwatch</button>
+    <button class="nav-link" data-mode="stats" id="nav-stats">Stats</button>
+  </nav>
 
-    <div id="floating-widget" class="floating-widget" aria-live="polite">
-        <div class="widget-header" id="widget-drag-handle">
-            <div class="widget-meta">
-                <span class="widget-badge">Live</span>
-                <span id="widget-mode">Clock</span>
-            </div>
-            <button id="widget-close" class="widget-close" type="button" aria-label="Hide floating timer">×</button>
-        </div>
-        <div class="widget-body" id="widget-body">
-            <span class="widget-mode" id="widget-mode-label">Clock</span>
-            <div id="widget-time" class="widget-time">00:00:00</div>
-            <div class="widget-controls">
-                <button id="widget-toggle" class="widget-btn primary" type="button">Pause</button>
-                <button id="widget-cycle" class="widget-btn" type="button">Mode</button>
-            </div>
-        </div>
+  <div id="floating-widget" class="floating-widget" aria-live="polite">
+    <div class="widget-header" id="widget-drag-handle">
+      <div class="widget-meta">
+        <span class="widget-badge">Live</span>
+        <span id="widget-mode">Clock</span>
+      </div>
+      <button id="widget-close" class="widget-close" aria-label="Hide floating widget">×</button>
+    </div>
+    <div class="widget-body" id="widget-body">
+      <span class="widget-mode" id="widget-mode-label">Clock</span>
+      <div id="widget-time" class="widget-time">00:00:00</div>
+      <div class="widget-controls">
+        <button id="widget-toggle" class="widget-btn primary" type="button">Pause</button>
+        <button id="widget-cycle" class="widget-btn" type="button">Mode</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex-1 flex flex-col items-center justify-center relative w-full h-full">
+    <div id="end-time-indicator" class="hidden mb-3 text-sm font-medium tracking-wider text-center w-full z-10 opacity-70" style="color: var(--ui-text-active);">
+      ENDS AT <span id="end-time-text">--:--</span>
+    </div>
+    <div id="pomodoro-indicator" class="hidden mb-6 text-sm font-medium tracking-wider text-center w-full z-10 opacity-70">
+      <span id="pomo-status">WORK</span> • INTERVAL <span id="pomo-interval">1</span>/4
     </div>
 
-    <div class="flex-1 flex flex-col items-center justify-center relative w-full h-full">
-        <div id="end-time-indicator" class="hidden mb-2 text-sm font-medium tracking-wider text-center w-full z-10 opacity-70 transition-all duration-300" style="color: var(--ui-text-active);">
-            ENDS AT <span id="end-time-text">--:--</span>
-        </div>
-
-        <div id="pomodoro-indicator" class="hidden mb-6 text-sm font-medium tracking-wider text-center w-full z-10 opacity-70 transition-all duration-300">
-            <span id="pomo-status">WORK</span> • INTERVAL <span id="pomo-interval">1</span>/4
-        </div>
-
-        <div id="clock-wrapper" class="clock-container">
-            <div id="h1"></div>
-            <div id="h2"></div>
-            <div class="clock-divider"></div>
-            <div id="m1"></div>
-            <div id="m2"></div>
-            <div class="clock-divider"></div>
-            <div id="s1"></div>
-            <div id="s2"></div>
-        </div>
-
-        <div id="controls" class="hidden mt-10 flex gap-4 z-10 transition-all duration-300">
-            <button id="btn-start" class="btn px-6 py-2 rounded-full font-bold tracking-widest uppercase">Start</button>
-            <button id="btn-pause" class="btn hidden px-6 py-2 rounded-full font-bold tracking-widest uppercase">Pause</button>
-            <button id="btn-reset" class="btn px-6 py-2 rounded-full font-bold tracking-widest uppercase">Reset</button>
-            <button id="btn-settings" class="btn px-4 py-2 rounded-full hidden" title="Settings">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.75 3.35 0 .4 1.65 1.42 2.722 3.17 3.15.84.264 1.39 1.22 1.09 2.04-.31.82-1.13 1.43-2.03 1.58-.9.15-1.8.63-2.49 1.31-.69.68-1.16 1.59-1.31 2.49-.15.9-.76 1.72-1.58 2.03-.82.3-1.78-.25-2.04-1.09-.43-1.75-1.5-2.77-3.15-3.17-1.76-.43-2.53-2.12-1.8-3.35.73-1.23 2.28-2.01 3.57-1.7.89.21 1.88.06 2.65-.52.77-.58 1.28-1.47 1.38-2.49.12-1.02-.29-2.05-1.09-2.71-.8-.66-1.86-1-2.92-.82-1.05.18-1.98.8-2.56 1.66-.59.86-.75 1.97-.42 2.95.33.98 1.05 1.8 1.99 2.27.94.47 2.07.6 3.09.35.86-.2 1.62-.7 2.08-1.4.46-.7.58-1.56.31-2.34-.28-.78-.92-1.44-1.68-1.76-.75-.32-1.64-.3-2.35.04-.73.35-1.32.99-1.54 1.75-.23.75-.11 1.58.32 2.25.43.67 1.17 1.13 2 1.28.83.15 1.69-.07 2.35-.56.66-.48 1.1-1.28 1.16-2.15.06-.86-.3-1.72-.93-2.36-.63-.64-1.51-1-2.41-.96-.9.04-1.77.42-2.38 1.07-.61.65-.95 1.54-.91 2.44.04.9.46 1.75 1.15 2.34.7.6 1.67.92 2.62.85.95-.07 1.82-.5 2.42-1.2.6-.7.91-1.64.81-2.57-.1-.93-.59-1.79-1.39-2.37-.8-.58-1.83-.84-2.83-.72-1 .12-1.93.64-2.58 1.42-.65.78-1 1.79-.95 2.81.05 1.02.52 1.97 1.32 2.65.8.68 1.89 1.08 2.97 1.13.92.04 1.83-.28 2.61-.89.78-.61 1.34-1.5 1.52-2.52.18-1.01-.05-2.09-.61-2.94-.56-.85-1.48-1.5-2.52-1.76-1.03-.26-2.15-.13-3.08.41-.93.54-1.62 1.49-1.8 2.57-.19 1.09.14 2.22.89 3.06.75.84 1.86 1.38 3.01 1.42.1.01.2.01.3.01"/></svg>
-            </button>
-        </div>
+    <div id="clock-wrapper" class="clock-container">
+      <div id="h1"></div>
+      <div id="h2"></div>
+      <div class="clock-divider"></div>
+      <div id="m1"></div>
+      <div id="m2"></div>
+      <div class="clock-divider"></div>
+      <div id="s1"></div>
+      <div id="s2"></div>
     </div>
 
-    <div class="absolute bottom-8 right-8 flex gap-3 z-10 items-center">
-        <button id="btn-fullscreen" class="btn p-2 rounded-full mr-1 hover:text-white" title="Toggle Fullscreen">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 3H3v5M3 3l5 5M16 3h5v5M21 3l-5 5M8 21H3v-5M3 21l5-5M16 21h5v-5M21 21l-5-5"/></svg>
-        </button>
-        <button id="btn-global-settings" class="btn p-2 rounded-full mr-2 hover:text-white" title="Appearance Settings">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.75 3.35 0 .4 1.65 1.42 2.722 3.17 3.15.84.264 1.39 1.22 1.09 2.04-.31.82-1.13 1.43-2.03 1.58-.9.15-1.8.63-2.49 1.31-.69.68-1.16 1.59-1.31 2.49-.15.9-.76 1.72-1.58 2.03-.82.3-1.78-.25-2.04-1.09-.43-1.75-1.5-2.77-3.15-3.17-1.76-.43-2.53-2.12-1.8-3.35.73-1.23 2.28-2.01 3.57-1.7.89.21 1.88.06 2.65-.52.77-.58 1.28-1.47 1.38-2.49.12-1.02-.29-2.05-1.09-2.71-.8-.66-1.86-1-2.92-.82-1.05.18-1.98.8-2.56 1.66-.59.86-.75 1.97-.42 2.95.33.98 1.05 1.8 1.99 2.27.94.47 2.07.6 3.09.35.86-.2 1.62-.7 2.08-1.4.46-.7.58-1.56.31-2.34-.28-.78-.92-1.44-1.68-1.76-.75-.32-1.64-.3-2.35.04-.73.35-1.32.99-1.54 1.75-.23.75-.11 1.58.32 2.25.43.67 1.17 1.13 2 1.28.83.15 1.69-.07 2.35-.56.66-.48 1.1-1.28 1.16-2.15.06-.86-.3-1.72-.93-2.36-.63-.64-1.51-1-2.41-.96-.9.04-1.77.42-2.38 1.07-.61.65-.95 1.54-.91 2.44.04.9.46 1.75 1.15 2.34.7.6 1.67.92 2.62.85.95-.07 1.82-.5 2.42-1.2.6-.7.91-1.64.81-2.57-.1-.93-.59-1.79-1.39-2.37-.8-.58-1.83-.84-2.83-.72-1 .12-1.93.64-2.58 1.42-.65.78-1 1.79-.95 2.81.05 1.02.52 1.97 1.32 2.65.8.68 1.89 1.08 2.97 1.13.92.04 1.83-.28 2.61-.89.78-.61 1.34-1.5 1.52-2.52.18-1.01-.05-2.09-.61-2.94-.56-.85-1.48-1.5-2.52-1.76-1.03-.26-2.15-.13-3.08.41-.93.54-1.62 1.49-1.8 2.57-.19 1.09.14 2.22.89 3.06.75.84 1.86 1.38 3.01 1.42.1.01.2.01.3.01"/></svg>
-        </button>
-        <div class="theme-dot active" style="background: #000000; border-color: #fff;" data-set-theme="dark" title="Dark"></div>
-        <div class="theme-dot" style="background: #f4f4f5; border-color: #333;" data-set-theme="light" title="Light"></div>
-        <div class="theme-dot" style="background: #000; border-color: #0f0;" data-set-theme="neon" title="Neon"></div>
-        <div class="theme-dot" style="background: #d9d0b4; border-color: #4a3b2c;" data-set-theme="vintage" title="Vintage"></div>
+    <div id="controls" class="hidden mt-10 flex gap-4 z-10">
+      <button id="btn-start" class="btn px-6 py-2 rounded-full font-bold tracking-widest uppercase">Start</button>
+      <button id="btn-pause" class="btn hidden px-6 py-2 rounded-full font-bold tracking-widest uppercase">Pause</button>
+      <button id="btn-reset" class="btn px-6 py-2 rounded-full font-bold tracking-widest uppercase">Reset</button>
+      <button id="btn-settings" class="btn px-4 py-2 rounded-full hidden" title="Settings">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0 .4 1.65 1.42 2.72 3.17 3.15.84.26 1.39 1.22 1.09 2.04-.31.82-1.13 1.43-2.03 1.58-.9.15-1.8.63-2.49 1.31-.69.68-1.16 1.59-1.31 2.49-.15.9-.76 1.72-1.58 2.03-.82.3-1.78-.25-2.04-1.09-.43-1.75-1.5-2.77-3.15-3.17-1.76-.43-2.53-2.12-1.8-3.35.73-1.23 2.28-2.01 3.57-1.7.89.21 1.88.06 2.65-.52.77-.58 1.28-1.47 1.38-2.49.12-1.02-.29-2.05-1.09-2.71-.8-.66-1.86-1-2.92-.82-1.05.18-1.98.8-2.56 1.66-.59.86-.75 1.97-.42 2.95.33.98 1.05 1.8 1.99 2.27.94.47 2.07.6 3.09.35.86-.2 1.62-.7 2.08-1.4.46-.7.58-1.56.31-2.34-.28-.78-.92-1.44-1.68-1.76-.75-.32-1.64-.3-2.35.04-.73.35-1.32.99-1.54 1.75-.23.75-.11 1.58.32 2.25.43.67 1.17 1.13 2 1.28.83.15 1.69-.07 2.35-.56.66-.48 1.1-1.28 1.16-2.15.06-.86-.3-1.72-.93-2.36-.63-.64-1.51-1-2.41-.96-.9.04-1.77.42-2.38 1.07-.61.65-.95 1.54-.91 2.44.04.9.46 1.75 1.15 2.34.7.6 1.67.92 2.62.85.95-.07 1.82-.5 2.42-1.2.6-.7.91-1.64.81-2.57-.1-.93-.59-1.79-1.39-2.37-.8-.58-1.83-.84-2.83-.72-1 .12-1.93.64-2.58 1.42-.65.78-1 1.79-.95 2.81.05 1.02.52 1.97 1.32 2.65.8.68 1.89 1.08 2.97 1.13.92.04 1.83-.28 2.61-.89.78-.61 1.34-1.5 1.52-2.52.18-1.01-.05-2.09-.61-2.94-.56-.85-1.48-1.5-2.52-1.76-1.03-.26-2.15-.13-3.08.41-.93.54-1.62 1.49-1.8 2.57-.19 1.09.14 2.22.89 3.06.75.84 1.86 1.38 3.01 1.42.1.01.2.01.3.01" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
     </div>
+  </div>
 
-    <div id="modal-pomodoro" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center">
-        <div class="modal-content rounded-xl p-8 max-w-sm w-full mx-4 shadow-2xl">
-            <h2 class="text-xl font-bold mb-6 text-center tracking-wide uppercase">Pomodoro Settings</h2>
-            <div class="space-y-4">
-                <div class="flex justify-between items-center">
-                    <label class="text-sm font-medium">Work (min)</label>
-                    <input type="number" id="inp-work" value="25" min="1" max="90" class="modal-input w-20 px-3 py-1 rounded text-center">
-                </div>
-                <div class="flex justify-between items-center">
-                    <label class="text-sm font-medium">Short Break (min)</label>
-                    <input type="number" id="inp-short" value="5" min="1" max="30" class="modal-input w-20 px-3 py-1 rounded text-center">
-                </div>
-                <div class="flex justify-between items-center">
-                    <label class="text-sm font-medium">Long Break (min)</label>
-                    <input type="number" id="inp-long" value="15" min="1" max="60" class="modal-input w-20 px-3 py-1 rounded text-center">
-                </div>
-                <div class="flex justify-between items-center">
-                    <label class="text-sm font-medium">Intervals</label>
-                    <input type="number" id="inp-intervals" value="4" min="1" max="10" class="modal-input w-20 px-3 py-1 rounded text-center">
-                </div>
-            </div>
-            <div class="mt-8 flex gap-3">
-                <button id="btn-pomo-cancel" class="btn flex-1 py-2 rounded-lg font-medium">Cancel</button>
-                <button id="btn-pomo-save" class="btn flex-1 py-2 rounded-lg font-medium" style="background: var(--accent); color: var(--bg);">Save</button>
-            </div>
+  <div class="absolute bottom-8 right-8 flex gap-3 z-10 items-center">
+    <button id="btn-fullscreen" class="icon-btn" title="Toggle Fullscreen" aria-label="Toggle Fullscreen">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H3v5M3 3l5 5M16 3h5v5M21 3l-5 5M8 21H3v-5M3 21l5-5M16 21h5v-5M21 21l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="btn-global-settings" class="icon-btn" title="Appearance Settings" aria-label="Appearance">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v3M12 18v3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M3 12h3M18 12h3M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12M12 8a4 4 0 1 1 0 8a4 4 0 0 1 0-8Z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="theme-dot active" style="background: #000000; border-color: #fff;" data-set-theme="dark" title="Dark"></div>
+    <div class="theme-dot" style="background: #f4f4f5; border-color: #333;" data-set-theme="light" title="Light"></div>
+    <div class="theme-dot" style="background: #000; border-color: #0f0;" data-set-theme="neon" title="Neon"></div>
+    <div class="theme-dot" style="background: #d9d0b4; border-color: #4a3b2c;" data-set-theme="vintage" title="Vintage"></div>
+  </div>
+
+  <div id="modal-login" class="modal-overlay">
+    <div class="modal-content">
+      <h2 class="text-xl font-bold mb-6 text-center tracking-wide uppercase">Login</h2>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium mb-2">Display name</label>
+          <input id="inp-user-name" class="modal-input" type="text" maxlength="24" placeholder="e.g. Alex" />
         </div>
-    </div>
-
-    <div id="modal-timer" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center">
-        <div class="modal-content rounded-xl p-8 max-w-sm w-full mx-4 shadow-2xl">
-            <h2 class="text-xl font-bold mb-6 text-center tracking-wide uppercase">Timer Settings</h2>
-            <div class="space-y-4">
-                <div class="flex justify-between items-center">
-                    <label class="text-sm font-medium">Hours</label>
-                    <input type="number" id="inp-timer-h" value="0" min="0" max="23" class="modal-input w-20 px-3 py-1 rounded text-center">
-                </div>
-                <div class="flex justify-between items-center">
-                    <label class="text-sm font-medium">Minutes</label>
-                    <input type="number" id="inp-timer-m" value="10" min="0" max="59" class="modal-input w-20 px-3 py-1 rounded text-center">
-                </div>
-                <div class="flex justify-between items-center">
-                    <label class="text-sm font-medium">Seconds</label>
-                    <input type="number" id="inp-timer-s" value="0" min="0" max="59" class="modal-input w-20 px-3 py-1 rounded text-center">
-                </div>
-            </div>
-            <div class="mt-8 flex gap-3">
-                <button id="btn-timer-cancel" class="btn flex-1 py-2 rounded-lg font-medium">Cancel</button>
-                <button id="btn-timer-save" class="btn flex-1 py-2 rounded-lg font-medium" style="background: var(--accent); color: var(--bg);">Save</button>
-            </div>
+        <div>
+          <label class="block text-sm font-medium mb-2">Email (optional)</label>
+          <input id="inp-user-email" class="modal-input" type="email" placeholder="you@example.com" />
         </div>
+      </div>
+      <div class="mt-8 flex gap-3">
+        <button id="btn-login-cancel" class="btn flex-1 py-2 rounded-lg font-medium">Later</button>
+        <button id="btn-login-save" class="btn flex-1 py-2 rounded-lg font-medium" style="background: var(--accent); color: var(--bg);">Save</button>
+      </div>
     </div>
+  </div>
 
-    <div id="modal-global-settings" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center">
-        <div class="modal-content rounded-xl p-8 max-w-sm w-full mx-4 shadow-2xl">
-            <h2 class="text-xl font-bold mb-6 text-center tracking-wide uppercase">Appearance</h2>
-            <div class="space-y-6">
-                <div>
-                    <div class="flex justify-between items-center mb-3">
-                        <label class="text-sm font-medium">Clock Scale / Size</label>
-                        <span id="size-display" class="text-sm font-mono">100%</span>
-                    </div>
-                    <input type="range" id="inp-clock-scale" min="0.5" max="1.8" step="0.05" value="1" class="w-full accent-white">
-                </div>
-            </div>
-            <div class="mt-8 flex justify-center">
-                <button id="btn-global-close" class="btn px-8 py-2 w-full rounded-lg font-medium text-sm tracking-widest uppercase" style="background: var(--accent); color: var(--bg);">Done</button>
-            </div>
+  <div id="modal-pomodoro" class="modal-overlay hidden">
+    <div class="modal-content">
+      <h2 class="text-xl font-bold mb-6 text-center tracking-wide uppercase">Pomodoro Settings</h2>
+      <div class="space-y-4">
+        <div class="flex justify-between items-center gap-4">
+          <label class="text-sm font-medium">Work (min)</label>
+          <input type="number" id="inp-work" value="25" min="1" max="90" class="modal-input w-20 text-center">
         </div>
-    </div>
-
-    <div id="modal-stats" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center">
-        <div class="modal-content rounded-[1.5rem] p-8 max-w-2xl w-full mx-4 shadow-2xl">
-            <h2 class="text-xl font-bold mb-6 text-center tracking-wide uppercase">Study Statistics</h2>
-            <div class="flex justify-center gap-4 mb-6">
-                <button id="btn-stat-daily" class="btn px-4 py-1 rounded-full text-xs font-semibold active-stat" style="background: var(--accent); color: var(--bg);">Daily</button>
-                <button id="btn-stat-monthly" class="btn px-4 py-1 rounded-full text-xs font-semibold">Monthly</button>
-                <button id="btn-stat-yearly" class="btn px-4 py-1 rounded-full text-xs font-semibold">Yearly</button>
-            </div>
-            <div class="w-full h-64 rounded-xl p-4 relative" style="background: var(--card-bg);">
-                <canvas id="statsChart"></canvas>
-            </div>
-            <div class="mt-6 flex justify-center gap-3 flex-wrap">
-                <button id="btn-clear-pomo" class="btn px-4 py-1 rounded-lg text-xs font-semibold hover:text-red-400 transition-colors border border-[var(--line)]">Clear Pomodoro</button>
-                <button id="btn-clear-timer" class="btn px-4 py-1 rounded-lg text-xs font-semibold hover:text-red-400 transition-colors border border-[var(--line)]">Clear Timer</button>
-                <button id="btn-clear-stopwatch" class="btn px-4 py-1 rounded-lg text-xs font-semibold hover:text-red-400 transition-colors border border-[var(--line)]">Clear Stopwatch</button>
-            </div>
-            <div class="mt-8 flex justify-center">
-                <button id="btn-stats-close" class="btn px-8 py-2 rounded-full font-medium text-sm tracking-widest uppercase">Close</button>
-            </div>
+        <div class="flex justify-between items-center gap-4">
+          <label class="text-sm font-medium">Short Break (min)</label>
+          <input type="number" id="inp-short" value="5" min="1" max="30" class="modal-input w-20 text-center">
         </div>
+        <div class="flex justify-between items-center gap-4">
+          <label class="text-sm font-medium">Long Break (min)</label>
+          <input type="number" id="inp-long" value="15" min="1" max="60" class="modal-input w-20 text-center">
+        </div>
+        <div class="flex justify-between items-center gap-4">
+          <label class="text-sm font-medium">Cycles</label>
+          <input type="number" id="inp-intervals" value="4" min="1" max="10" class="modal-input w-20 text-center">
+        </div>
+      </div>
+      <div class="mt-8 flex gap-3">
+        <button id="btn-pomo-cancel" class="btn flex-1 py-2 rounded-lg font-medium">Cancel</button>
+        <button id="btn-pomo-save" class="btn flex-1 py-2 rounded-lg font-medium" style="background: var(--accent); color: var(--bg);">Save</button>
+      </div>
     </div>
+  </div>
 
-    <div id="toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full text-sm font-medium z-[100] opacity-0 transition-opacity duration-300 pointer-events-none shadow-lg" style="background: rgba(17,17,17,0.9); color: var(--ui-text-active); border: 1px solid var(--line);"></div>
+  <div id="modal-timer" class="modal-overlay hidden">
+    <div class="modal-content">
+      <h2 class="text-xl font-bold mb-6 text-center tracking-wide uppercase">Timer Settings</h2>
+      <div class="space-y-4">
+        <div class="flex justify-between items-center gap-4">
+          <label class="text-sm font-medium">Hours</label>
+          <input type="number" id="inp-timer-h" value="0" min="0" max="23" class="modal-input w-20 text-center">
+        </div>
+        <div class="flex justify-between items-center gap-4">
+          <label class="text-sm font-medium">Minutes</label>
+          <input type="number" id="inp-timer-m" value="10" min="0" max="59" class="modal-input w-20 text-center">
+        </div>
+        <div class="flex justify-between items-center gap-4">
+          <label class="text-sm font-medium">Seconds</label>
+          <input type="number" id="inp-timer-s" value="0" min="0" max="59" class="modal-input w-20 text-center">
+        </div>
+      </div>
+      <div class="mt-8 flex gap-3">
+        <button id="btn-timer-cancel" class="btn flex-1 py-2 rounded-lg font-medium">Cancel</button>
+        <button id="btn-timer-save" class="btn flex-1 py-2 rounded-lg font-medium" style="background: var(--accent); color: var(--bg);">Save</button>
+      </div>
+    </div>
+  </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+  <div id="modal-global-settings" class="modal-overlay hidden">
+    <div class="modal-content">
+      <h2 class="text-xl font-bold mb-6 text-center tracking-wide uppercase">Appearance</h2>
+      <div class="space-y-6">
+        <div>
+          <div class="flex justify-between items-center mb-3">
+            <label class="text-sm font-medium">Clock Scale / Size</label>
+            <span id="size-display" class="text-sm font-mono">100%</span>
+          </div>
+          <input type="range" id="inp-clock-scale" min="0.5" max="1.8" step="0.05" value="1" class="w-full accent-white">
+        </div>
+      </div>
+      <div class="mt-8 Fflex justify-center">
+        <button id="btn-global-close" class="btn px-8 py-2 w-full rounded-lg font-medium text-sm tracking-widest uppercase" style="background: var(--accent); color: var(--bg);">Done</button>
+      </div>
+    </div>
+  </div>
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-        let db, auth, userId;
-        let sessionsData = [];
+  <div id="modal-stats" class="modal-overlay hidden">
+    <div class="modal-content max-w-2xl">
+      <h2 class="text-xl font-bold mb-6 text-center tracking-wide uppercase">Session Stats</h2>
+      <div class="flex justify-center gap-4 mb-6">
+        <button id="btn-stat-daily" class="btn mini-btn active" style="background: var(--accent); color: var(--bg);">Daily</button>
+        <button id="btn-stat-monthly" class="btn mini-btn">Monthly</button>
+        <button id="btn-stat-yearly" class="btn mini-btn">Yearly</button>
+      </div>
+      <div class="w-full h-64 rounded-xl p-4" style="background: var(--card-bg);">
+        <canvas id="statsChart"></canvas>
+      </div>
+      <div class="mt-6 flex justify-center gap-3 flex-wrap">
+        <button id="btn-clear-pomo" class="btn mini-btn">Clear Pomodoro</button>
+        <button id="btn-clear-timer" class="btn mini-btn">Clear Timer</button>
+        <button id="btn-clear-stopwatch" class="btn mini-btn">Clear Stopwatch</button>
+      </div>
+      <div class="mt-8 flex justify-center">
+        <button id="btn-stats-close" class="btn px-8 py-2 rounded-full font-medium text-sm tracking-widest uppercase">Close</button>
+      </div>
+    </div>
+  </div>
 
-        if (firebaseConfig) {
-            const app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-            const initAuth = async () => {
-                try {
-                    if (typeof __initial_auth_token !== 'undefined') {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
-                    userId = auth.currentUser.uid;
-                    fetchStats();
-                } catch (e) {
-                    console.error('Auth error', e);
-                }
-            };
-            initAuth();
-        }
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-        let statsChart = null;
-        let currentStatView = 'daily';
+  <script>
+    const STORAGE_KEY = 'aesthetic-clock-timer';
+    const defaultState = {
+      user: { name: '', email: '' },
+      stats: { pomodoro: [], timer: [], stopwatch: [] },
+      settings: {
+        currentMode: 'clock',
+        theme: 'dark',
+        clockScale: 1,
+        pomodoro: { work: 25, short: 5, long: 15, intervals: 4 },
+        timer: { h: 0, m: 10, s: 0 },
+        pomodoroPhase: 'work',
+        pomodoroInterval: 1,
+        pomodoroRemaining: 25 * 60,
+        timerRemaining: 10 * 60,
+        stopwatchElapsed: 0
+      }
+    };
 
-        const fetchStats = async () => {
-            if (!db || !userId) return;
-            try {
-                const querySnapshot = await getDocs(collection(db, 'artifacts', appId, 'users', userId, 'study_sessions'));
-                sessionsData = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                renderChart();
-            } catch (e) {
-                console.error('Fetch stats error', e);
-            }
-        };
+    let appState = loadState();
+    const clockDigits = {
+      h1: new FlipDigit('h1'),
+      h2: new FlipDigit('h2'),
+      m1: new FlipDigit('m1'),
+      m2: new FlipDigit('m2'),
+      s1: new FlipDigit('s1'),
+      s2: new FlipDigit('s2')
+    };
 
-        const logSession = async (duration, modeToLog) => {
-            if (duration < 1) return;
-            const newSession = {
-                duration,
-                timestamp: Date.now(),
-                mode: modeToLog
-            };
-            if (db && userId) {
-                try {
-                    const docRef = await addDoc(collection(db, 'artifacts', appId, 'users', userId, 'study_sessions'), newSession);
-                    newSession.id = docRef.id;
-                } catch (e) {
-                    console.error('Error saving session', e);
-                }
-            }
-            sessionsData.push(newSession);
-            renderChart();
-        };
+    let currentMode = appState.settings.currentMode || 'clock';
+    let isRunning = false;
+    let loopHandle = null;
+    let lastFrameTime = performance.now();
+    let lastSessionStart = null;
+    let statsChart = null;
+    let statsView = 'daily';
 
-        const renderChart = () => {
-            const canvas = document.getElementById('statsChart');
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            if (statsChart) statsChart.destroy();
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return structuredClone(defaultState);
+        return { ...structuredClone(defaultState), ...JSON.parse(raw) };
+      } catch {
+        return structuredClone(defaultState);
+      }
+    }
 
-            const aggregated = {};
-            sessionsData.forEach(session => {
-                const date = new Date(session.timestamp);
-                let key;
-                if (currentStatView === 'daily') {
-                    key = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-                } else if (currentStatView === 'monthly') {
-                    key = date.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
-                } else {
-                    key = date.getFullYear().toString();
-                }
-                if (!aggregated[key]) aggregated[key] = { pomodoro: 0, timer: 0, stopwatch: 0 };
-                const mode = session.mode || 'pomodoro';
-                if (aggregated[key][mode] !== undefined) {
-                    aggregated[key][mode] += session.duration;
-                }
-            });
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+    }
 
-            const sortedKeys = Object.keys(aggregated).sort((a, b) => {
-                if (currentStatView === 'yearly') return parseInt(a) - parseInt(b);
-                return new Date(a) - new Date(b);
-            });
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => toast.classList.remove('show'), 1800);
+    }
 
-            const limit = currentStatView === 'daily' ? 7 : (currentStatView === 'monthly' ? 12 : 5);
-            const displayKeys = sortedKeys.slice(-limit);
+    function pad2(v) {
+      return String(v).padStart(2, '0');
+    }
 
-            const labels = displayKeys;
-            const pomoData = displayKeys.map(k => (aggregated[k].pomodoro / 60).toFixed(1));
-            const timerData = displayKeys.map(k => (aggregated[k].timer / 60).toFixed(1));
-            const stopData = displayKeys.map(k => (aggregated[k].stopwatch / 60).toFixed(1));
+    function formatHMS(totalSeconds) {
+      const h = Math.floor(totalSeconds / 3600);
+      const m = Math.floor((totalSeconds % 3600) / 60);
+      const s = totalSeconds % 60;
+      return [pad2(h), pad2(m), pad2(s)].join(':');
+    }
 
-            const chartColor = getComputedStyle(document.body).getPropertyValue('--accent').trim() || '#ffffff';
-            const gridColor = getComputedStyle(document.body).getPropertyValue('--line').trim() || '#333333';
-            const textColor = getComputedStyle(document.body).getPropertyValue('--ui-text').trim() || '#888888';
+    function updateClockFace(hours, minutes, seconds) {
+      const digits = [
+        pad2(hours).charAt(0),
+        pad2(hours).charAt(1),
+        pad2(minutes).charAt(0),
+        pad2(minutes).charAt(1),
+        pad2(seconds).charAt(0),
+        pad2(seconds).charAt(1)
+      ];
+      for (const [key, value] of Object.entries(clockDigits)) {
+        const idx = ['h1', 'h2', 'm1', 'm2', 's1', 's2'].indexOf(key);
+        clockDigits[key].update(digits[idx]);
+      }
+    }
 
-            statsChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels,
-                    datasets: [
-                        { label: 'Pomodoro', data: pomoData, backgroundColor: chartColor, borderRadius: 4, maxBarThickness: 12 },
-                        { label: 'Timer', data: timerData, backgroundColor: '#60a5fa', borderRadius: 4, maxBarThickness: 12 },
-                        { label: 'Stopwatch', data: stopData, backgroundColor: '#34d399', borderRadius: 4, maxBarThickness: 12 }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: { ticks: { color: textColor }, grid: { display: false } },
-                        y: { beginAtZero: true, ticks: { color: textColor }, grid: { color: gridColor }, title: { display: true, text: 'Minutes', color: textColor } }
-                    },
-                    plugins: { legend: { display: true, labels: { color: textColor, boxWidth: 12 } } }
-                }
-            });
-        };
+    function renderClockFromDate(date) {
+      const h = date.getHours() % 12 || 12;
+      const m = date.getMinutes();
+      const s = date.getSeconds();
+      updateClockFace(h, m, s);
+    }
 
-        const setStatView = (view) => {
-            currentStatView = view;
-            document.querySelectorAll('#modal-stats .btn').forEach(b => {
-                if (b.id.startsWith('btn-stat-')) {
-                    b.style.background = 'var(--ui-bg)';
-                    b.style.color = 'var(--ui-text-active)';
-                }
-            });
-            const activeBtn = document.getElementById(`btn-stat-${view}`);
-            activeBtn.style.background = 'var(--accent)';
-            activeBtn.style.color = 'var(--bg)';
-            renderChart();
-        };
+    function updateFloatingWidget() {
+      const modeLabel = currentMode.charAt(0).toUpperCase() + currentMode.slice(1);
+      document.getElementById('widget-mode').textContent = modeLabel;
+      document.getElementById('widget-mode-label').textContent = modeLabel;
+      let value = '00:00:00';
+      if (currentMode === 'clock') {
+        const d = new Date();
+        value = formatHMS((d.getHours() % 12 || 12) * 3600 + d.getMinutes() * 60 + d.getSeconds());
+      } else if (currentMode === 'stopwatch') {
+        value = formatHMS(appState.settings.stopwatchElapsed);
+      } else if (currentMode === 'timer') {
+        value = formatHMS(appState.settings.timerRemaining);
+      } else if (currentMode === 'pomodoro') {
+        value = formatHMS(appState.settings.pomodoroRemaining);
+      }
+      document.getElementById('widget-time').textContent = value;
+      const toggle = document.getElementById('widget-toggle');
+      toggle.textContent = isRunning ? 'Pause' : 'Start';
+      toggle.classList.toggle('primary', isRunning);
+    }
 
-        document.getElementById('btn-stat-daily').addEventListener('click', () => setStatView('daily'));
-        document.getElementById('btn-stat-monthly').addEventListener('click', () => setStatView('monthly'));
-        document.getElementById('btn-stat-yearly').addEventListener('click', () => setStatView('yearly'));
-        document.getElementById('nav-stats').addEventListener('click', () => {
-            document.getElementById('modal-stats').classList.remove('hidden');
-            renderChart();
-        });
-        document.getElementById('btn-stats-close').addEventListener('click', () => {
-            document.getElementById('modal-stats').classList.add('hidden');
-        });
+    function updatePomoUI() {
+      const status = appState.settings.pomodoroPhase === 'work'
+        ? 'WORK'
+        : (appState.settings.pomodoroPhase === 'short' ? 'SHORT BREAK' : 'LONG BREAK');
+      document.getElementById('pomo-status').textContent = status;
+      document.getElementById('pomo-interval').textContent = appState.settings.pomodoroInterval;
+    }
 
-        const clearDataByMode = async (modeToClear) => {
-            if (db && userId) {
-                try {
-                    const toDelete = sessionsData.filter(s => (s.mode || 'pomodoro') === modeToClear);
-                    for (const session of toDelete) {
-                        if (session.id) await deleteDoc(doc(db, 'artifacts', appId, 'users', userId, 'study_sessions', session.id));
-                    }
-                } catch (e) {
-                    console.error('Error clearing data', e);
-                }
-            }
-            sessionsData = sessionsData.filter(s => (s.mode || 'pomodoro') !== modeToClear);
-            renderChart();
-            showToast(`${modeToClear.charAt(0).toUpperCase() + modeToClear.slice(1)} data cleared.`);
-        };
+    function updateEndTimeUI() {
+      const indicator = document.getElementById('end-time-indicator');
+      if (!isRunning || (currentMode !== 'timer' && currentMode !== 'pomodoro')) {
+        indicator.classList.add('hidden');
+        return;
+      }
+      const total = currentMode === 'timer'
+        ? appState.settings.timerRemaining
+        : appState.settings.pomodoroRemaining;
+      const endDate = new Date(Date.now() + total * 1000);
+      let hour = endDate.getHours();
+      const minute = endDate.getMinutes().toString().padStart(2,'0');
+      const suffix = hour >= 12 ? 'PM' : 'AM';
+      hour = hour % 12 || 12;
+      document.getElementById('end-time-text').textContent = `${hour}:${minute} ${suffix}`;
+      indicator.classList.remove('hidden');
+    }
 
-        document.getElementById('btn-clear-pomo').addEventListener('click', () => clearDataByMode('pomodoro'));
-        document.getElementById('btn-clear-timer').addEventListener('click', () => clearDataByMode('timer'));
-        document.getElementById('btn-clear-stopwatch').addEventListener('click', () => clearDataByMode('stopwatch'));
+    function saveSession(mode, seconds) {
+      if (!seconds || seconds < 1) return;
+      const entry = {
+        mode,
+        seconds,
+        timestamp: Date.now()
+      };
+      appState.stats[mode].push(entry);
+      saveState();
+      renderStatsChart();
+    }
 
-        class FlipDigit {
-            constructor(containerId) {
-                this.container = document.getElementById(containerId);
-                this.container.classList.add('flip-card');
-                this.value = '0';
-                this.topHalf = this.createHalf('top-half', 'static', this.value);
-                this.bottomHalf = this.createHalf('bottom-half', 'static', this.value);
-                this.container.appendChild(this.topHalf.el);
-                this.container.appendChild(this.bottomHalf.el);
-            }
-            createHalf(halfClass, typeClass, val) {
-                const el = document.createElement('div');
-                el.className = `half ${halfClass} ${typeClass}`;
-                const text = document.createElement('div');
-                text.className = 'text';
-                text.innerText = val;
-                el.appendChild(text);
-                return { el, text };
-            }
-            update(newValue) {
-                if (this.value === newValue) return;
-                const existingFlippers = this.container.querySelectorAll('.flipper');
-                existingFlippers.forEach(f => f.remove());
-                const oldValue = this.value;
-                this.value = newValue;
-                const flipTop = this.createHalf('top-half', 'flipper', oldValue);
-                const flipBottom = this.createHalf('bottom-half', 'flipper', newValue);
-                this.container.appendChild(flipTop.el);
-                this.container.appendChild(flipBottom.el);
-                this.topHalf.text.innerText = newValue;
-                requestAnimationFrame(() => {
-                    flipTop.el.classList.add('flip-down');
-                    flipBottom.el.classList.add('flip-down');
-                });
-                setTimeout(() => {
-                    this.bottomHalf.text.innerText = newValue;
-                    if (this.container.contains(flipTop.el)) flipTop.el.remove();
-                    if (this.container.contains(flipBottom.el)) flipBottom.el.remove();
-                }, 600);
-            }
-        }
+    function handleSessionEnd() {
+      if (!lastSessionStart) return;
+      const elapsedSeconds = Math.max(1, Math.floor((Date.now() - lastSessionStart) / 1000));
+      const modeToLog = currentMode === 'pomodoro' && appState.settings.pomodoroPhase !== 'work' ? 'break' : currentMode;
+      if (modeToLog === 'pomodoro' || modeToLog === 'timer' || modeToLog === 'stopwatch') {
+        saveSession(modeToLog, elapsedSeconds);
+      }
+      lastSessionStart = null;
+    }
 
-        const digits = {
-            h1: new FlipDigit('h1'), h2: new FlipDigit('h2'),
-            m1: new FlipDigit('m1'), m2: new FlipDigit('m2'),
-            s1: new FlipDigit('s1'), s2: new FlipDigit('s2')
-        };
-
-        const formatTime = (h, m, s) => {
-            const pad = num => num.toString().padStart(2, '0');
-            return [...pad(h), ...pad(m), ...pad(s)];
-        };
-
-        const updateClockDisplay = (h, m, s) => {
-            const vals = formatTime(h, m, s);
-            digits.h1.update(vals[0]); digits.h2.update(vals[1]);
-            digits.m1.update(vals[2]); digits.m2.update(vals[3]);
-            digits.s1.update(vals[4]); digits.s2.update(vals[5]);
-        };
-
-        let currentMode = 'clock';
-        let loopInterval = null;
-        let isRunning = false;
-        let sessionStartTime = null;
-        let lastTickTimestamp = Date.now();
-
-        const state = {
-            pomodoro: { work: 25, short: 5, long: 15, intervals: 4, currInterval: 1, phase: 'work', timeLeft: 25 * 60 },
-            timer: { h: 0, m: 10, s: 0, timeLeft: 10 * 60 },
-            stopwatch: { elapsed: 0 }
-        };
-
-        const formatDurationForWidget = (totalSeconds) => {
-            const h = Math.floor(totalSeconds / 3600);
-            const m = Math.floor((totalSeconds % 3600) / 60);
-            const s = totalSeconds % 60;
-            return [h, m, s].map(v => String(v).padStart(2, '0')).join(':');
-        };
-
-        const updateFloatingWidget = () => {
-            const widgetModeEl = document.getElementById('widget-mode');
-            const widgetModeLabel = document.getElementById('widget-mode-label');
-            const widgetTimeEl = document.getElementById('widget-time');
-            const widgetToggleEl = document.getElementById('widget-toggle');
-            const modeLabel = currentMode.charAt(0).toUpperCase() + currentMode.slice(1);
-            widgetModeEl.textContent = modeLabel;
-            widgetModeLabel.textContent = modeLabel;
-
-            let value = '00:00:00';
-            if (currentMode === 'clock') {
-                const now = new Date();
-                const h = now.getHours() % 12 || 12;
-                const m = now.getMinutes();
-                const s = now.getSeconds();
-                value = formatDurationForWidget((h * 3600) + (m * 60) + s);
-            } else if (currentMode === 'stopwatch') {
-                value = formatDurationForWidget(state.stopwatch.elapsed);
-            } else if (currentMode === 'timer') {
-                value = formatDurationForWidget(state.timer.timeLeft);
-            } else if (currentMode === 'pomodoro') {
-                value = formatDurationForWidget(state.pomodoro.timeLeft);
-            }
-
-            widgetTimeEl.textContent = value;
-            widgetToggleEl.textContent = isRunning ? 'Pause' : 'Start';
-            widgetToggleEl.classList.toggle('primary', isRunning);
-        };
-
-        const updateEndTimeUI = () => {
-            const endTimeIndicator = document.getElementById('end-time-indicator');
-            if (!isRunning || (currentMode !== 'timer' && currentMode !== 'pomodoro')) {
-                endTimeIndicator.classList.add('hidden');
-                return;
-            }
-            let timeLeft = 0;
-            if (currentMode === 'timer') timeLeft = state.timer.timeLeft;
-            if (currentMode === 'pomodoro') timeLeft = state.pomodoro.timeLeft;
-            const endDate = new Date(Date.now() + timeLeft * 1000);
-            let h = endDate.getHours();
-            const m = endDate.getMinutes().toString().padStart(2, '0');
-            const ampm = h >= 12 ? 'PM' : 'AM';
-            h = h % 12 || 12;
-            document.getElementById('end-time-text').innerText = `${h}:${m} ${ampm}`;
-            endTimeIndicator.classList.remove('hidden');
-        };
-
-        const tick = () => {
-            const now = Date.now();
-            const elapsedSeconds = Math.max(0, Math.floor((now - lastTickTimestamp) / 1000));
-            lastTickTimestamp = now;
-
-            if (elapsedSeconds === 0) {
-                updateFloatingWidget();
-                return;
-            }
-
-            for (let step = 0; step < elapsedSeconds; step++) {
-                if (currentMode === 'clock') {
-                    const currentTime = new Date();
-                    let h = currentTime.getHours();
-                    h = h % 12 || 12;
-                    updateClockDisplay(h, currentTime.getMinutes(), currentTime.getSeconds());
-                } else if (currentMode === 'stopwatch' && isRunning) {
-                    state.stopwatch.elapsed++;
-                    const s = state.stopwatch.elapsed;
-                    updateClockDisplay(Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60);
-                } else if (currentMode === 'timer' && isRunning) {
-                    if (state.timer.timeLeft > 0) {
-                        state.timer.timeLeft--;
-                        const s = state.timer.timeLeft;
-                        updateClockDisplay(Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60);
-                    } else {
-                        handleSessionEnd();
-                        stopEngine();
-                        break;
-                    }
-                } else if (currentMode === 'pomodoro' && isRunning) {
-                    if (state.pomodoro.timeLeft > 0) {
-                        state.pomodoro.timeLeft--;
-                    } else {
-                        handleSessionEnd();
-                        let p = state.pomodoro;
-                        if (p.phase === 'work') {
-                            if (p.currInterval >= p.intervals) {
-                                p.phase = 'long';
-                                p.timeLeft = p.long * 60;
-                            } else {
-                                p.phase = 'short';
-                                p.timeLeft = p.short * 60;
-                            }
-                        } else if (p.phase === 'short') {
-                            p.phase = 'work';
-                            p.currInterval++;
-                            p.timeLeft = p.work * 60;
-                        } else if (p.phase === 'long') {
-                            p.phase = 'work';
-                            p.currInterval = 1;
-                            p.timeLeft = p.work * 60;
-                            stopEngine();
-                        }
-                        updatePomoUI();
-                        updateEndTimeUI();
-                        if (isRunning && p.phase === 'work') sessionStartTime = Date.now();
-                    }
-                    const s = state.pomodoro.timeLeft;
-                    updateClockDisplay(Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60);
-                }
-            }
-            updateFloatingWidget();
-        };
-
-        const handleSessionEnd = () => {
-            if (sessionStartTime && isRunning) {
-                const duration = Math.floor((Date.now() - sessionStartTime) / 1000);
-                const modeToLog = currentMode === 'pomodoro' ? (state.pomodoro.phase === 'work' ? 'pomodoro' : 'break') : currentMode;
-                if (modeToLog !== 'break') logSession(duration, modeToLog);
-            }
-            sessionStartTime = null;
-        };
-
-        const startEngine = () => {
-            if (!loopInterval) loopInterval = setInterval(tick, 250);
-            isRunning = true;
-            document.getElementById('btn-start').classList.add('hidden');
-            document.getElementById('btn-pause').classList.remove('hidden');
-            lastTickTimestamp = Date.now();
-            sessionStartTime = Date.now();
-            updateEndTimeUI();
-            updateFloatingWidget();
-        };
-
-        const stopEngine = () => {
-            if (isRunning) handleSessionEnd();
-            isRunning = false;
-            document.getElementById('btn-start').classList.remove('hidden');
-            document.getElementById('btn-pause').classList.add('hidden');
-            updateEndTimeUI();
-            updateFloatingWidget();
-        };
-
-        const resetEngine = () => {
-            stopEngine();
-            lastTickTimestamp = Date.now();
-            if (currentMode === 'stopwatch') {
-                state.stopwatch.elapsed = 0;
-                updateClockDisplay(0, 0, 0);
-            } else if (currentMode === 'timer') {
-                state.timer.timeLeft = (state.timer.h * 3600) + (state.timer.m * 60) + state.timer.s;
-                updateClockDisplay(state.timer.h, state.timer.m, state.timer.s);
-            } else if (currentMode === 'pomodoro') {
-                state.pomodoro.currInterval = 1;
-                state.pomodoro.phase = 'work';
-                state.pomodoro.timeLeft = state.pomodoro.work * 60;
-                updatePomoUI();
-                updateClockDisplay(Math.floor(state.pomodoro.timeLeft / 3600), Math.floor((state.pomodoro.timeLeft % 3600) / 60), state.pomodoro.timeLeft % 60);
-            }
-            updateFloatingWidget();
-        };
-
-        const navLinks = document.querySelectorAll('.nav-link');
-        const controls = document.getElementById('controls');
-        const pomoIndicator = document.getElementById('pomodoro-indicator');
-        const btnSettings = document.getElementById('btn-settings');
-
-        const switchMode = (mode) => {
-            if (mode === 'stats') return;
-            currentMode = mode;
-            navLinks.forEach(link => {
-                if (link.dataset.mode !== 'stats') link.classList.toggle('active', link.dataset.mode === mode);
-            });
-            stopEngine();
-            if (mode === 'clock') {
-                controls.classList.add('hidden');
-                pomoIndicator.classList.add('hidden');
-                lastTickTimestamp = Date.now();
-                tick();
-                if (!loopInterval) loopInterval = setInterval(tick, 250);
-            } else {
-                controls.classList.remove('hidden');
-                clearInterval(loopInterval);
-                loopInterval = null;
-                if (mode === 'pomodoro') {
-                    pomoIndicator.classList.remove('hidden');
-                    btnSettings.classList.remove('hidden');
-                    resetEngine();
-                } else {
-                    pomoIndicator.classList.add('hidden');
-                    if (mode === 'timer') {
-                        btnSettings.classList.remove('hidden');
-                        resetEngine();
-                    } else if (mode === 'stopwatch') {
-                        btnSettings.classList.add('hidden');
-                        resetEngine();
-                    }
-                }
-            }
-            updateFloatingWidget();
-        };
-
-        navLinks.forEach(link => {
-            link.addEventListener('click', (e) => {
-                if (e.target.dataset.mode !== 'stats') switchMode(e.target.dataset.mode);
-            });
-        });
-
-        document.getElementById('btn-start').addEventListener('click', startEngine);
-        document.getElementById('btn-pause').addEventListener('click', stopEngine);
-        document.getElementById('btn-reset').addEventListener('click', resetEngine);
-
-        btnSettings.addEventListener('click', () => {
-            if (currentMode === 'pomodoro') document.getElementById('modal-pomodoro').classList.remove('hidden');
-            if (currentMode === 'timer') document.getElementById('modal-timer').classList.remove('hidden');
-        });
-
-        const closeModals = () => {
-            document.getElementById('modal-pomodoro').classList.add('hidden');
-            document.getElementById('modal-timer').classList.add('hidden');
-        };
-
-        document.getElementById('btn-pomo-cancel').addEventListener('click', closeModals);
-        document.getElementById('btn-timer-cancel').addEventListener('click', closeModals);
-
-        const btnGlobalSettings = document.getElementById('btn-global-settings');
-        const modalGlobalSettings = document.getElementById('modal-global-settings');
-        const btnGlobalClose = document.getElementById('btn-global-close');
-        const inpClockScale = document.getElementById('inp-clock-scale');
-        const sizeDisplay = document.getElementById('size-display');
-        const btnFullscreen = document.getElementById('btn-fullscreen');
-
-        const showToast = (msg) => {
-            const toast = document.getElementById('toast');
-            toast.textContent = msg;
-            toast.classList.remove('opacity-0');
-            toast.classList.add('opacity-100');
-            clearTimeout(showToast.timeoutId);
-            showToast.timeoutId = setTimeout(() => {
-                toast.classList.remove('opacity-100');
-                toast.classList.add('opacity-0');
-            }, 1800);
-        };
-
-        document.getElementById('btn-pomo-save').addEventListener('click', () => {
-            const work = Number(document.getElementById('inp-work').value) || 25;
-            const short = Number(document.getElementById('inp-short').value) || 5;
-            const long = Number(document.getElementById('inp-long').value) || 15;
-            const intervals = Number(document.getElementById('inp-intervals').value) || 4;
-            state.pomodoro.work = work;
-            state.pomodoro.short = short;
-            state.pomodoro.long = long;
-            state.pomodoro.intervals = intervals;
-            state.pomodoro.currInterval = 1;
-            state.pomodoro.phase = 'work';
-            state.pomodoro.timeLeft = work * 60;
-            closeModals();
-            updatePomoUI();
-            updateClockDisplay(Math.floor(state.pomodoro.timeLeft / 3600), Math.floor((state.pomodoro.timeLeft % 3600) / 60), state.pomodoro.timeLeft % 60);
-            showToast('Pomodoro updated.');
-        });
-
-        document.getElementById('btn-timer-save').addEventListener('click', () => {
-            const h = Number(document.getElementById('inp-timer-h').value) || 0;
-            const m = Number(document.getElementById('inp-timer-m').value) || 0;
-            const s = Number(document.getElementById('inp-timer-s').value) || 0;
-            state.timer.h = h;
-            state.timer.m = m;
-            state.timer.s = s;
-            state.timer.timeLeft = (h * 3600) + (m * 60) + s;
-            closeModals();
-            updateClockDisplay(h, m, s);
-            showToast('Timer updated.');
-        });
-
-        btnGlobalSettings.addEventListener('click', () => {
-            modalGlobalSettings.classList.remove('hidden');
-        });
-
-        btnGlobalClose.addEventListener('click', () => {
-            modalGlobalSettings.classList.add('hidden');
-        });
-
-        inpClockScale.addEventListener('input', (event) => {
-            const scale = Number(event.target.value);
-            document.documentElement.style.setProperty('--clock-scale', scale.toFixed(2));
-            sizeDisplay.textContent = `${Math.round(scale * 100)}%`;
-        });
-
-        btnFullscreen.addEventListener('click', async () => {
-            try {
-                if (!document.fullscreenElement) {
-                    await document.documentElement.requestFullscreen();
-                } else {
-                    await document.exitFullscreen();
-                }
-            } catch (error) {
-                console.error('Fullscreen toggle error', error);
-            }
-        });
-
-        document.querySelectorAll('[data-set-theme]').forEach(dot => {
-            dot.addEventListener('click', () => {
-                const theme = dot.dataset.setTheme;
-                document.body.setAttribute('data-theme', theme);
-                document.querySelectorAll('[data-set-theme]').forEach(item => item.classList.toggle('active', item === dot));
-            });
-        });
-
-        const updatePomoUI = () => {
-            const statusEl = document.getElementById('pomo-status');
-            const intervalEl = document.getElementById('pomo-interval');
-            const phase = state.pomodoro.phase;
-            statusEl.textContent = phase === 'work' ? 'WORK' : (phase === 'short' ? 'SHORT BREAK' : 'LONG BREAK');
-            intervalEl.textContent = state.pomodoro.currInterval;
-        };
-
-        document.getElementById('widget-toggle').addEventListener('click', () => {
-            if (isRunning) {
-                stopEngine();
-            } else {
-                startEngine();
-            }
-        });
-
-        document.getElementById('widget-cycle').addEventListener('click', () => {
-            const order = ['clock', 'pomodoro', 'timer', 'stopwatch'];
-            const index = order.indexOf(currentMode);
-            switchMode(order[(index + 1) % order.length]);
-        });
-
-        document.getElementById('widget-close').addEventListener('click', () => {
-            document.getElementById('floating-widget').classList.add('hidden');
-        });
-
-        document.getElementById('widget-body').addEventListener('click', () => {
-            if (document.getElementById('floating-widget').classList.contains('hidden')) {
-                document.getElementById('floating-widget').classList.remove('hidden');
-            }
-        });
-
-        document.querySelectorAll('.theme-dot').forEach(dot => {
-            const theme = dot.dataset.setTheme;
-            if (theme === 'dark') dot.classList.add('active');
-        });
-
-        updateFloatingWidget();
+    function resetTimerDisplay() {
+      if (currentMode === 'timer') {
+        const h = appState.settings.timer.h;
+        const m = appState.settings.timer.m;
+        const s = appState.settings.timer.s;
+        appState.settings.timerRemaining = h * 3600 + m * 60 + s;
+        updateClockFace(h, m, s);
+      } else if (currentMode === 'stopwatch') {
+        appState.settings.stopwatchElapsed = 0;
+        updateClockFace(0, 0, 0);
+      } else if (currentMode === 'pomodoro') {
+        appState.settings.pomodoroPhase = 'work';
+        appState.settings.pomodoroInterval = 1;
+        appState.settings.pomodoroRemaining = appState.settings.pomodoro.work * 60;
         updatePomoUI();
-        switchMode('clock');
-        updateClockDisplay(0, 0, 0);
-    </script>
+        const total = appState.settings.pomodoroRemaining;
+        updateClockFace(Math.floor(total / 3600), Math.floor((total % 3600)/60), total % 60);
+      }
+      updateFloatingWidget();
+      updateEndTimeUI();
+    }
+
+    function startLoop() {
+      if (loopHandle) return;
+      lastFrameTime = performance.now();
+      loopHandle = setInterval(tick, 250);
+    }
+
+    function stopLoop() {
+      clearInterval(loopHandle);
+      loopHandle = null;
+    }
+
+    function startRunning() {
+      if (isRunning) return;
+      isRunning = true;
+      lastSessionStart = Date.now();
+      document.getElementById('btn-start').classList.add('hidden');
+      document.getElementById('btn-pause').classList.remove('hidden');
+      updateFloatingWidget();
+      updateEndTimeUI();
+      startLoop();
+    }
+
+    function stopRunning() {
+      if (!isRunning) return;
+      handleSessionEnd();
+      isRunning = false;
+      document.getElementById('btn-start').classList.remove('hidden');
+      document.getElementById('btn-pause').classList.add('hidden');
+      updateFloatingWidget();
+      updateEndTimeUI();
+      stopLoop();
+    }
+
+    function transitionPomodoro() {
+      const p = appState.settings;
+      if (p.pomodoroPhase === 'work') {
+        if (p.pomodoroInterval >= p.pomodoro.intervals) {
+          p.pomodoroPhase = 'long';
+        } else {
+          p.pomodoroPhase = 'short';
+        }
+      } else if (p.pomodoroPhase === 'short') {
+        p.pomodoroPhase = 'work';
+        p.pomodoroInterval += 1;
+      } else {
+        p.pomodoroPhase = 'work';
+        p.pomodoroInterval = 1;
+      }
+
+      if (p.pomodoroPhase === 'work') {
+        p.pomodoroRemaining = p.pomodoro.work * 60;
+      } else if (p.pomodoroPhase === 'short') {
+        p.pomodoroRemaining = p.pomodoro.short * 60;
+      } else {
+        p.pomodoroRemaining = p.pomodoro.long * 60;
+      }
+      updatePomoUI();
+      updateEndTimeUI();
+      saveState();
+    }
+
+    function tick() {
+      const now = performance.now();
+      const elapsedMs = now - lastFrameTime;
+      lastFrameTime = now;
+
+      if (currentMode === 'clock') {
+        renderClockFromDate(new Date());
+        updateFloatingWidget();
+        return;
+      }
+
+      if (!isRunning) {
+        updateFloatingWidget();
+        return;
+      }
+
+      const elapsedSeconds = Math.max(1, Math.floor(elapsedMs / 1000));
+      if (currentMode === 'stopwatch') {
+        appState.settings.stopwatchElapsed += elapsedSeconds;
+        const total = appState.settings.stopwatchElapsed;
+        updateClockFace(Math.floor(total / 3600), Math.floor((total % 3600) / 60), total % 60);
+        updateFloatingWidget();
+        return;
+      }
+
+      if (currentMode === 'timer') {
+        appState.settings.timerRemaining = Math.max(0, appState.settings.timerRemaining - elapsedSeconds);
+        const total = appState.settings.timerRemaining;
+        updateClockFace(Math.floor(total / 3600), Math.floor((total % 3600) / 60), total % 60);
+        updateFloatingWidget();
+        if (total <= 0) {
+          showToast('Timer finished');
+          stopRunning();
+          saveSession('timer', appState.settings.timer.h * 3600 + appState.settings.timer.m * 60 + appState.settings.timer.s);
+          resetTimerDisplay();
+        }
+        return;
+      }
+
+      if (currentMode === 'pomodoro') {
+        appState.settings.pomodoroRemaining = Math.max(0, appState.settings.pomodoroRemaining - elapsedSeconds);
+        const total = appState.settings.pomodoroRemaining;
+        updateClockFace(Math.floor(total / 3600), Math.floor((total % 3600) / 60), total % 60);
+        updateFloatingWidget();
+        if (total <= 0) {
+          showToast('Pomodoro cycle complete');
+          transitionPomodoro();
+          saveSession('pomodoro', appState.settings.pomodoro.work * 60);
+        }
+        return;
+      }
+    }
+
+    function switchMode(mode) {
+      currentMode = mode;
+      appState.settings.currentMode = mode;
+      saveState();
+      document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.toggle('active', link.dataset.mode === mode);
+      });
+
+      if (mode === 'clock') {
+        stopRunning();
+        document.getElementById('controls').classList.add('hidden');
+        document.getElementById('pomodoro-indicator').classList.add('hidden');
+        document.getElementById('btn-settings').classList.add('hidden');
+        renderClockFromDate(new Date());
+        startLoop();
+      } else {
+        stopRunning();
+        document.getElementById('controls').classList.remove('hidden');
+        if (mode === 'pomodoro') {
+          document.getElementById('pomodoro-indicator').classList.remove('hidden');
+          document.getElementById('btn-settings').classList.remove('hidden');
+        } else if (mode === 'timer') {
+          document.getElementById('pomodoro-indicator').classList.add('hidden');
+          document.getElementById('btn-settings').classList.remove('hidden');
+        } else {
+          document.getElementById('pomodoro-indicator').classList.add('hidden');
+          document.getElementById('btn-settings').classList.add('hidden');
+        }
+        resetTimerDisplay();
+        stopLoop();
+      }
+      updateFloatingWidget();
+      updateEndTimeUI();
+    }
+
+    function syncTheme(theme) {
+      document.body.setAttribute('data-theme', theme);
+      appState.settings.theme = theme;
+      saveState();
+      document.querySelectorAll('[data-set-theme]').forEach(dot => {
+        dot.classList.toggle('active', dot.dataset.setTheme === theme);
+      });
+    }
+
+    function renderStatsChart() {
+      const canvas = document.getElementById('statsChart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (statsChart) statsChart.destroy();
+
+      const dataMap = {};
+      const allSessions = [];
+      Object.entries(appState.stats).forEach(([mode, list]) => {
+        list.forEach(item => allSessions.push({ ...item, mode }));
+      });
+
+      allSessions.forEach(entry => {
+        const d = new Date(entry.timestamp);
+        let key = '';
+        if (statsView === 'daily') {
+          key = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        } else if (statsView === 'monthly') {
+          key = d.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+        } else {
+          key = d.getFullYear().toString();
+        }
+        if (!dataMap[key]) dataMap[key] = { pomodoro: 0, timer: 0, stopwatch: 0 };
+        dataMap[key][entry.mode] = (dataMap[key][entry.mode] || 0) + entry.seconds;
+      });
+
+      const labels = Object.keys(dataMap).slice(-12);
+      const pData = labels.map(k => (dataMap[k].pomodoro || 0) / 60);
+      const tData = labels.map(k => (dataMap[k].timer || 0) / 60);
+      const sData = labels.map(k => (dataMap[k].stopwatch || 0) / 60);
+
+      statsChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Pomodoro', data: pData, backgroundColor: getComputedStyle(document.body).getPropertyValue('--accent').trim() || '#ffffff', borderRadius: 4 },
+            { label: 'Timer', data: tData, backgroundColor: '#60a5fa', borderRadius: 4 },
+            { label: 'Stopwatch', data: sData, backgroundColor: '#34d399', borderRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { ticks: { color: getComputedStyle(document.body).getPropertyValue('--ui-text').trim() || '#888' }, grid: { display: false } },
+            y: { beginAtZero: true, ticks: { color: getComputedStyle(document.body).getPropertyValue('--ui-text').trim() || '#888' }, title: { display: true, text: 'Minutes', color: getComputedStyle(document.body).getPropertyValue('--ui-text').trim() || '#888' } }
+          },
+          plugins: { legend: { labels: { color: getComputedStyle(document.body).getPropertyValue('--ui-text-active').trim() || '#fff' } } }
+        }
+      });
+    }
+
+    function setStatsView(view) {
+      statsView = view;
+      document.querySelectorAll('#modal-stats .btn').forEach(button => {
+        if (button.id && button.id.startsWith('btn-stat-')) {
+          button.classList.remove('active');
+          button.style.background = 'var(--ui-bg)';
+          button.style.color = 'var(--ui-text-active)';
+        }
+      });
+      const activeButton = document.getElementById(`btn-stat-${view}`);
+      if (activeButton) {
+        activeButton.classList.add('active');
+        activeButton.style.background = 'var(--accent)';
+        activeButton.style.color = 'var(--bg)';
+      }
+      renderStatsChart();
+    }
+
+    function resetStatsForMode(mode) {
+      appState.stats[mode] = [];
+      saveState();
+      renderStatsChart();
+      showToast(`${mode.charAt(0).toUpperCase() + mode.slice(1)} cleared`);
+    }
+
+    function openLogin() {
+      const modal = document.getElementById('modal-login');
+      document.getElementById('inp-user-name').value = appState.user.name || '';
+      document.getElementById('inp-user-email').value = appState.user.email || '';
+      modal.classList.remove('hidden');
+    }
+
+    function saveLogin() {
+      appState.user.name = document.getElementById('inp-user-name').value.trim();
+      appState.user.email = document.getElementById('inp-user-email').value.trim();
+      saveState();
+      document.getElementById('modal-login').classList.add('hidden');
+      showToast(appState.user.name ? `Welcome, ${appState.user.name}` : 'Guest mode');
+    }
+
+    class FlipDigit {
+      constructor(id) {
+        this.container = document.getElementById(id);
+        this.container.classList.add('flip-card');
+        this.current = '0';
+        this.topHalf = this.makeHalf('top-half', '0');
+        this.bottomHalf = this.makeHalf('bottom-half', '0');
+        this.container.appendChild(this.topHalf);
+        this.container.appendChild(this.bottomHalf);
+      }
+      makeHalf(type, value) {
+        const half = document.createElement('div');
+        half.className = `half ${type}`;
+        const text = document.createElement('div');
+        text.className = 'text';
+        text.textContent = value;
+        half.appendChild(text);
+        return half;
+      }
+      update(nextValue) {
+        if (nextValue === this.current) return;
+        const oldValue = this.current;
+        this.current = nextValue;
+
+        const topFlip = this.makeHalf('top-half flipper', oldValue);
+        const bottomFlip = this.makeHalf('bottom-half flipper', nextValue);
+        this.container.appendChild(topFlip);
+        this.container.appendChild(bottomFlip);
+
+        this.topHalf.querySelector('.text').textContent = nextValue;
+        requestAnimationFrame(() => {
+          topFlip.classList.add('flip-down');
+          bottomFlip.classList.add('flip-down');
+        });
+
+        setTimeout(() => {
+          this.bottomHalf.querySelector('.text').textContent = nextValue;
+          this.container.removeChild(topFlip);
+          this.container.removeChild(bottomFlip);
+        }, 360);
+      }
+    }
+
+    document.getElementById('btn-login-save').addEventListener('click', saveLogin);
+    document.getElementById('btn-login-cancel').addEventListener('click', () => document.getElementById('modal-login').classList.add('hidden'));
+    document.getElementById('nav-stats').addEventListener('click', () => {
+      document.getElementById('modal-stats').classList.remove('hidden');
+      renderStatsChart();
+    });
+    document.getElementById('btn-stats-close').addEventListener('click', () => document.getElementById('modal-stats').classList.add('hidden'));
+    document.getElementById('btn-clear-pomo').addEventListener('click', () => resetStatsForMode('pomodoro'));
+    document.getElementById('btn-clear-timer').addEventListener('click', () => resetStatsForMode('timer'));
+    document.getElementById('btn-clear-stopwatch').addEventListener('click', () => resetStatsForMode('stopwatch'));
+    document.getElementById('btn-stat-daily').addEventListener('click', () => setStatsView('daily'));
+    document.getElementById('btn-stat-monthly').addEventListener('click', () => setStatsView('monthly'));
+    document.getElementById('btn-stat-yearly').addEventListener('click', () => setStatsView('yearly'));
+
+    document.getElementById('btn-start').addEventListener('click', startRunning);
+    document.getElementById('btn-pause').addEventListener('click', stopRunning);
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      stopRunning();
+      resetTimerDisplay();
+    });
+
+    document.getElementById('widget-toggle').addEventListener('click', () => {
+      if (isRunning) stopRunning(); else startRunning();
+    });
+
+    document.getElementById('widget-cycle').addEventListener('click', () => {
+      const order = ['clock', 'pomodoro', 'timer', 'stopwatch'];
+      const idx = order.indexOf(currentMode);
+      switchMode(order[(idx + 1) % order.length]);
+    });
+
+    document.getElementById('widget-close').addEventListener('click', () => document.getElementById('floating-widget').classList.add('hidden'));
+    document.getElementById('widget-body').addEventListener('click', () => document.getElementById('floating-widget').classList.remove('hidden'));
+
+    document.getElementById('btn-pomo-save').addEventListener('click', () => {
+      const p = appState.settings.pomodoro;
+      p.work = Number(document.getElementById('inp-work').value) || 25;
+      p.short = Number(document.getElementById('inp-short').value) || 5;
+      p.long = Number(document.getElementById('inp-long').value) || 15;
+      p.intervals = Number(document.getElementById('inp-intervals').value) || 4;
+      appState.settings.pomodoroPhase = 'work';
+      appState.settings.pomodoroInterval = 1;
+      appState.settings.pomodoroRemaining = p.work * 60;
+      saveState();
+      updatePomoUI();
+      resetTimerDisplay();
+      document.getElementById('modal-pomodoro').classList.add('hidden');
+    });
+    document.getElementById('btn-pomo-cancel').addEventListener('click', () => document.getElementById('modal-pomodoro').classList.add('hidden'));
+
+    document.getElementById('btn-timer-save').addEventListener('click', () => {
+      appState.settings.timer.h = Number(document.getElementById('inp-timer-h').value) || 0;
+      appState.settings.timer.m = Number(document.getElementById('inp-timer-m').value) || 0;
+      appState.settings.timer.s = Number(document.getElementById('inp-timer-s').value) || 0;
+      appState.settings.timerRemaining = appState.settings.timer.h * 3600 + appState.settings.timer.m * 60 + appState.settings.timer.s;
+      saveState();
+      resetTimerDisplay();
+      document.getElementById('modal-timer').classList.add('hidden');
+    });
+    document.getElementById('btn-timer-cancel').addEventListener('click', () => document.getElementById('modal-timer').classList.add('hidden'));
+
+    document.getElementById('btn-global-close').addEventListener('click', () => document.getElementById('modal-global-settings').classList.add('hidden'));
+    document.getElementById('btn-global-settings').addEventListener('click', () => document.getElementById('modal-global-settings').classList.remove('hidden'));
+    document.getElementById('inp-clock-scale').addEventListener('input', (e) => {
+      const scale = Number(e.target.value) || 1;
+      document.documentElement.style.setProperty('--clock-scale', scale.toFixed(2));
+      appState.settings.clockScale = scale;
+      saveState();
+      document.getElementById('size-display').textContent = `${Math.round(scale * 100)}%`;
+    });
+
+    document.getElementById('btn-fullscreen').addEventListener('click', async () => {
+      try {
+        if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
+        else await document.exitFullscreen();
+      } catch (error) {
+        console.warn('Fullscreen failed', error);
+      }
+    });
+
+    document.getElementById('btn-settings').addEventListener('click', () => {
+      if (currentMode === 'pomodoro') document.getElementById('modal-pomodoro').classList.remove('hidden');
+      if (currentMode === 'timer') document.getElementById('modal-timer').classList.remove('hidden');
+    });
+
+    document.querySelectorAll('[data-set-theme]').forEach(button => {
+      button.addEventListener('click', () => syncTheme(button.dataset.setTheme));
+    });
+
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.addEventListener('click', () => {
+        if (link.dataset.mode === 'stats') return;
+        switchMode(link.dataset.mode);
+      });
+    });
+
+    function bootstrap() {
+      syncTheme(appState.settings.theme || 'dark');
+      document.documentElement.style.setProperty('--clock-scale', String(appState.settings.clockScale || 1));
+      document.getElementById('inp-clock-scale').value = appState.settings.clockScale || 1;
+      document.getElementById('size-display').textContent = `${Math.round((appState.settings.clockScale || 1) * 100)}%`;
+      updatePomoUI();
+      renderClockFromDate(new Date());
+      updateFloatingWidget();
+      setStatsView('daily');
+      if (!appState.user.name && !appState.user.email) {
+        openLogin();
+      }
+      switchMode(currentMode);
+      startLoop();
+    }
+
+    bootstrap();
+  </script>
 </body>
 </html>
