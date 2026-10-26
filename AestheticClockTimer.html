@@ -71,6 +71,64 @@
             margin: 0;
         }
 
+        .brand-wrap {
+            position: absolute;
+            top: 1.2rem;
+            left: 1.5rem;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            gap: 0.9rem;
+            padding: 0.55rem 0.9rem;
+            border: 1px solid var(--line);
+            background: rgba(17,17,17,0.35);
+            backdrop-filter: blur(10px);
+            border-radius: 999px;
+            box-shadow: var(--shadow);
+        }
+
+        .brand-mark {
+            width: 2.2rem;
+            height: 2.2rem;
+            border-radius: 0.72rem;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(135deg, var(--accent), rgba(255,255,255,0.35));
+            color: var(--bg);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);
+        }
+
+        .brand-mark svg {
+            width: 1.25rem;
+            height: 1.25rem;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 1.8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .brand-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.1;
+        }
+
+        .brand-title {
+            font-size: 0.7rem;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--ui-text-active);
+        }
+
+        .brand-subtitle {
+            font-size: 0.56rem;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--ui-text);
+        }
+
         .nav-link {
             color: var(--ui-text);
             transition: color 0.3s ease;
@@ -361,6 +419,21 @@
     </style>
 </head>
 <body>
+    <div class="brand-wrap" aria-label="Aesthetic Clock Timer brand">
+        <div class="brand-mark">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="13" r="7"></circle>
+                <path d="M12 8v5l3 2"></path>
+                <path d="M12 2.5v2.5"></path>
+                <path d="M21.5 13h-2.5"></path>
+            </svg>
+        </div>
+        <div class="brand-text">
+            <div class="brand-title">Aesthetic</div>
+            <div class="brand-subtitle">Clock Timer</div>
+        </div>
+    </div>
+
     <nav class="absolute top-8 w-full flex justify-center gap-6 text-sm tracking-widest font-medium z-10">
         <button class="nav-link active uppercase" data-mode="clock">Clock</button>
         <button class="nav-link uppercase" data-mode="pomodoro">Pomodoro</button>
@@ -412,7 +485,7 @@
             <button id="btn-pause" class="btn hidden px-6 py-2 rounded-full font-bold tracking-widest uppercase">Pause</button>
             <button id="btn-reset" class="btn px-6 py-2 rounded-full font-bold tracking-widest uppercase">Reset</button>
             <button id="btn-settings" class="btn px-4 py-2 rounded-full hidden" title="Settings">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.75 3.35 0a1.724 1.724 0 002.573 1.012c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.012 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.012 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.012c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.012c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.012-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.012-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.291.07 2.573-1.012z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15.5A3.5 3.5 0 1012 8.5a3.5 3.5 0 000 7z"/></svg>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.75 3.594 0 .278.713.886 1.277 1.653 1.653.759.378 1.642.216 2.279-.434.638-.65.635-1.59.08-2.283-.555-.693-1.58-1.097-2.35-1.004-.77.093-1.45.647-1.8 1.394-.35.747-.313 1.13-.235 1.506.078.377.222.813.387 1.09.164.277.389.586.687.824.298.238.576.55.628.917.052.367-.144.763-.537 1.028-.392.264-.835.37-1.277.322-.442-.048-.862-.241-1.18-.56-.317-.319-.533-.73-.537-1.163-.005-.433.195-.893.577-1.229.382-.336.916-.541 1.465-.546.55-.005 1.073.146 1.474.53.402.384.582.905.524 1.44-.058.535-.374 1.021-.885 1.316-.512.295-1.198.357-1.78.159-.582-.197-1.073-.66-1.289-1.215-.216-.555-.173-1.191.139-1.728.312-.537.847-.938 1.447-1.126.6-.188 1.257-.112 1.81.172.553.284.973.82 1.155 1.438.182.617.126 1.298-.158 1.888-.284.59-.806 1.064-1.4 1.315-.594.25-1.287.271-1.911.034-.624-.237-1.156-.73-1.45-1.315-.295-.584-.344-1.273-.121-1.879.223-.606.673-1.115 1.257-1.423.585-.309 1.286-.398 1.936-.207.649.191 1.22.678 1.514 1.31.294.631.306 1.393.035 2.054-.271.662-.864 1.22-1.569 1.523-.706.304-1.517.33-2.25.03-.733-.299-1.341-.899-1.66-1.61-.319-.711-.335-1.568-.1-2.289.234-.721.709-1.3 1.35-1.696.642-.396 1.445-.572 2.206-.436.761.136 1.449.559 1.939 1.153.49.594.75 1.397.734 2.188-.015.791-.317 1.558-.84 2.09-.522.532-1.25.865-1.992.927-.742.061-1.492-.155-2.09-.626-.598-.471-1.051-1.193-1.218-1.977-.168-.783.012-1.622.527-2.305.515-.683 1.329-1.163 2.213-1.286.885-.124 1.792.106 2.543.682.751.576 1.27 1.461 1.382 2.436.112.975-.194 1.998-.833 2.805-.639.808-1.601 1.402-2.655 1.56-1.053.157-2.145-.073-3.019-.657-.873-.584-1.535-1.482-1.77-2.479-.235-.997-.045-2.09.502-2.969.548-.881 1.456-1.574 2.485-1.91 1.029-.336 2.173-.277 3.15.186.976.463 1.773 1.361 2.213 2.386.439 1.025.487 2.194.155 3.236-.332 1.042-1.014 1.984-1.898 2.644-.885.659-2.012.98-3.12.876-1.107-.103-2.141-.606-2.851-1.486-.71-.881-1.129-2.083-1.056-3.257.073-1.174.612-2.31 1.506-3.101.895-.791 2.127-1.193 3.362-1.041.845.109 1.642.495 2.236 1.062.594.567.979 1.336 1.086 2.163.108.828-.071 1.693-.542 2.398-.471.705-1.236 1.266-2.108 1.494-1.010.266-2.128-.025-2.944-.785-.816-.76-1.273-1.94-1.194-3.072.079-1.133.611-2.201 1.501-2.929.889-.728 2.086-1.08 3.203-.953.187.021.373.058.556.11"/></svg>
             </button>
         </div>
     </div>
@@ -422,7 +495,7 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 3H3v5M3 3l5 5M16 3h5v5M21 3l-5 5M8 21H3v-5M3 21l5-5M16 21h5v-5M21 21l-5-5"/></svg>
         </button>
         <button id="btn-global-settings" class="btn p-2 rounded-full mr-2 hover:text-white" title="Appearance Settings">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.75 3.35 0a1.724 1.724 0 002.573 1.012c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.012 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.012 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.012c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.012c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.012-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.012-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.291.07 2.573-1.012z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15.5A3.5 3.5 0 1012 8.5a3.5 3.5 0 000 7z"/></svg>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.75 3.35 0 .4 1.65 1.42 2.722 3.17 3.15.84.264 1.39 1.22 1.09 2.04-.31.82-1.13 1.43-2.03 1.58-.9.15-1.8.63-2.49 1.31-.69.68-1.16 1.59-1.31 2.49-.15.9-.76 1.72-1.58 2.03-.82.3-1.78-.25-2.04-1.09-.43-1.75-1.5-2.77-3.15-3.17-1.76-.43-2.53-2.12-1.8-3.35.73-1.23 2.28-2.01 3.57-1.7.89.21 1.88.06 2.65-.52.77-.58 1.28-1.47 1.38-2.49.12-1.02-.29-2.05-1.09-2.71-.8-.66-1.86-1-2.92-.82-1.05.18-1.98.8-2.56 1.66-.59.86-.75 1.97-.42 2.95.33.98 1.05 1.8 1.99 2.27.94.47 2.07.6 3.09.35.86-.2 1.62-.7 2.08-1.4.46-.7.58-1.56.31-2.34-.28-.78-.92-1.44-1.68-1.76-.75-.32-1.64-.3-2.35.04-.73.35-1.32.99-1.54 1.75-.23.75-.11 1.58.32 2.25.43.67 1.17 1.13 2 1.28.83.15 1.69-.07 2.35-.56.66-.48 1.1-1.28 1.16-2.15.06-.86-.3-1.72-.93-2.36-.63-.64-1.51-1-2.41-.96-.9.04-1.77.42-2.38 1.07-.61.65-.95 1.54-.91 2.44.04.9.46 1.75 1.15 2.34.7.6 1.67.92 2.62.85.95-.07 1.82-.5 2.42-1.2.6-.7.91-1.64.81-2.57-.1-.93-.59-1.79-1.39-2.37-.8-.58-1.83-.84-2.83-.72-1 .12-1.93.64-2.58 1.42-.65.78-1 1.79-.95 2.81.05 1.02.52 1.97 1.32 2.65.8.68 1.89 1.08 2.97 1.13.92.04 1.83-.28 2.61-.89.78-.61 1.34-1.5 1.52-2.52.18-1.01-.05-2.09-.61-2.94-.56-.85-1.48-1.5-2.52-1.76-1.03-.26-2.15-.13-3.08.41-.93.54-1.62 1.49-1.8 2.57-.19 1.09.14 2.22.89 3.06.75.84 1.86 1.38 3.01 1.42.1.01.2.01.3.01"/></svg>
         </button>
         <div class="theme-dot active" style="background: #000000; border-color: #fff;" data-set-theme="dark" title="Dark"></div>
         <div class="theme-dot" style="background: #f4f4f5; border-color: #333;" data-set-theme="light" title="Light"></div>
@@ -522,7 +595,7 @@
         </div>
     </div>
 
-    <div id="toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full text-sm font-medium z-[100] opacity-0 transition-opacity duration-300 pointer-events-none shadow-[0_10px_35px_rgba(0,0,0,0.35)]" style="background: rgba(17,17,17,0.9); color: var(--ui-text-active);"></div>
+    <div id="toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full text-sm font-medium z-[100] opacity-0 transition-opacity duration-300 pointer-events-none shadow-lg" style="background: rgba(17,17,17,0.9); color: var(--ui-text-active); border: 1px solid var(--line);"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -548,7 +621,7 @@
                     userId = auth.currentUser.uid;
                     fetchStats();
                 } catch (e) {
-                    console.error("Auth error", e);
+                    console.error('Auth error', e);
                 }
             };
             initAuth();
@@ -564,14 +637,14 @@
                 sessionsData = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
                 renderChart();
             } catch (e) {
-                console.error("Fetch stats error", e);
+                console.error('Fetch stats error', e);
             }
         };
 
         const logSession = async (duration, modeToLog) => {
             if (duration < 1) return;
             const newSession = {
-                duration: duration,
+                duration,
                 timestamp: Date.now(),
                 mode: modeToLog
             };
@@ -580,7 +653,7 @@
                     const docRef = await addDoc(collection(db, 'artifacts', appId, 'users', userId, 'study_sessions'), newSession);
                     newSession.id = docRef.id;
                 } catch (e) {
-                    console.error("Error saving session", e);
+                    console.error('Error saving session', e);
                 }
             }
             sessionsData.push(newSession);
@@ -588,7 +661,9 @@
         };
 
         const renderChart = () => {
-            const ctx = document.getElementById('statsChart').getContext('2d');
+            const canvas = document.getElementById('statsChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
             if (statsChart) statsChart.destroy();
 
             const aggregated = {};
@@ -629,7 +704,7 @@
             statsChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: labels,
+                    labels,
                     datasets: [
                         { label: 'Pomodoro', data: pomoData, backgroundColor: chartColor, borderRadius: 4, maxBarThickness: 12 },
                         { label: 'Timer', data: timerData, backgroundColor: '#60a5fa', borderRadius: 4, maxBarThickness: 12 },
@@ -681,7 +756,7 @@
                         if (session.id) await deleteDoc(doc(db, 'artifacts', appId, 'users', userId, 'study_sessions', session.id));
                     }
                 } catch (e) {
-                    console.error("Error clearing data", e);
+                    console.error('Error clearing data', e);
                 }
             }
             sessionsData = sessionsData.filter(s => (s.mode || 'pomodoro') !== modeToClear);
@@ -999,129 +1074,122 @@
 
         const showToast = (msg) => {
             const toast = document.getElementById('toast');
-            if (toast) {
-                toast.innerText = msg;
-                toast.style.opacity = '1';
-                setTimeout(() => { toast.style.opacity = '0'; }, 3000);
-            }
+            toast.textContent = msg;
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100');
+            clearTimeout(showToast.timeoutId);
+            showToast.timeoutId = setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0');
+            }, 1800);
         };
 
-        btnGlobalSettings.addEventListener('click', () => modalGlobalSettings.classList.remove('hidden'));
-        btnGlobalClose.addEventListener('click', () => modalGlobalSettings.classList.add('hidden'));
-        inpClockScale.addEventListener('input', (e) => {
-            const scale = e.target.value;
-            document.documentElement.style.setProperty('--clock-scale', scale);
-            sizeDisplay.innerText = `${Math.round(scale * 100)}%`;
-        });
-
-        btnFullscreen.addEventListener('click', () => {
-            if (!document.fullscreenElement) {
-                if (document.documentElement.requestFullscreen) {
-                    document.documentElement.requestFullscreen().catch(() => showToast('Fullscreen disabled in preview environment.'));
-                } else {
-                    showToast('Fullscreen API not supported.');
-                }
-            } else {
-                document.exitFullscreen();
-            }
-        });
-
         document.getElementById('btn-pomo-save').addEventListener('click', () => {
-            state.pomodoro.work = parseInt(document.getElementById('inp-work').value) || 25;
-            state.pomodoro.short = parseInt(document.getElementById('inp-short').value) || 5;
-            state.pomodoro.long = parseInt(document.getElementById('inp-long').value) || 15;
-            state.pomodoro.intervals = parseInt(document.getElementById('inp-intervals').value) || 4;
-            resetEngine();
+            const work = Number(document.getElementById('inp-work').value) || 25;
+            const short = Number(document.getElementById('inp-short').value) || 5;
+            const long = Number(document.getElementById('inp-long').value) || 15;
+            const intervals = Number(document.getElementById('inp-intervals').value) || 4;
+            state.pomodoro.work = work;
+            state.pomodoro.short = short;
+            state.pomodoro.long = long;
+            state.pomodoro.intervals = intervals;
+            state.pomodoro.currInterval = 1;
+            state.pomodoro.phase = 'work';
+            state.pomodoro.timeLeft = work * 60;
             closeModals();
+            updatePomoUI();
+            updateClockDisplay(Math.floor(state.pomodoro.timeLeft / 3600), Math.floor((state.pomodoro.timeLeft % 3600) / 60), state.pomodoro.timeLeft % 60);
+            showToast('Pomodoro updated.');
         });
 
         document.getElementById('btn-timer-save').addEventListener('click', () => {
-            state.timer.h = parseInt(document.getElementById('inp-timer-h').value) || 0;
-            state.timer.m = parseInt(document.getElementById('inp-timer-m').value) || 0;
-            state.timer.s = parseInt(document.getElementById('inp-timer-s').value) || 0;
-            resetEngine();
+            const h = Number(document.getElementById('inp-timer-h').value) || 0;
+            const m = Number(document.getElementById('inp-timer-m').value) || 0;
+            const s = Number(document.getElementById('inp-timer-s').value) || 0;
+            state.timer.h = h;
+            state.timer.m = m;
+            state.timer.s = s;
+            state.timer.timeLeft = (h * 3600) + (m * 60) + s;
             closeModals();
+            updateClockDisplay(h, m, s);
+            showToast('Timer updated.');
         });
 
-        const updatePomoUI = () => {
-            document.getElementById('pomo-status').innerText = state.pomodoro.phase.toUpperCase();
-            document.getElementById('pomo-interval').innerText = state.pomodoro.currInterval;
-        };
+        btnGlobalSettings.addEventListener('click', () => {
+            modalGlobalSettings.classList.remove('hidden');
+        });
 
-        const themeDots = document.querySelectorAll('.theme-dot');
-        themeDots.forEach(dot => {
-            dot.addEventListener('click', (e) => {
-                const theme = e.target.dataset.setTheme;
+        btnGlobalClose.addEventListener('click', () => {
+            modalGlobalSettings.classList.add('hidden');
+        });
+
+        inpClockScale.addEventListener('input', (event) => {
+            const scale = Number(event.target.value);
+            document.documentElement.style.setProperty('--clock-scale', scale.toFixed(2));
+            sizeDisplay.textContent = `${Math.round(scale * 100)}%`;
+        });
+
+        btnFullscreen.addEventListener('click', async () => {
+            try {
+                if (!document.fullscreenElement) {
+                    await document.documentElement.requestFullscreen();
+                } else {
+                    await document.exitFullscreen();
+                }
+            } catch (error) {
+                console.error('Fullscreen toggle error', error);
+            }
+        });
+
+        document.querySelectorAll('[data-set-theme]').forEach(dot => {
+            dot.addEventListener('click', () => {
+                const theme = dot.dataset.setTheme;
                 document.body.setAttribute('data-theme', theme);
-                themeDots.forEach(d => d.classList.remove('active'));
-                e.target.classList.add('active');
-                renderChart();
+                document.querySelectorAll('[data-set-theme]').forEach(item => item.classList.toggle('active', item === dot));
             });
         });
 
-        const floatingWidget = document.getElementById('floating-widget');
-        const widgetDragHandle = document.getElementById('widget-drag-handle');
-        const widgetBody = document.getElementById('widget-body');
-        const widgetToggle = document.getElementById('widget-toggle');
-        const widgetCycle = document.getElementById('widget-cycle');
-        const widgetClose = document.getElementById('widget-close');
-        const modeOrder = ['clock', 'timer', 'pomodoro', 'stopwatch'];
-        let widgetDrag = { active: false, offsetX: 0, offsetY: 0 };
+        const updatePomoUI = () => {
+            const statusEl = document.getElementById('pomo-status');
+            const intervalEl = document.getElementById('pomo-interval');
+            const phase = state.pomodoro.phase;
+            statusEl.textContent = phase === 'work' ? 'WORK' : (phase === 'short' ? 'SHORT BREAK' : 'LONG BREAK');
+            intervalEl.textContent = state.pomodoro.currInterval;
+        };
 
-        widgetToggle.addEventListener('click', () => {
-            if (isRunning) stopEngine();
-            else startEngine();
+        document.getElementById('widget-toggle').addEventListener('click', () => {
+            if (isRunning) {
+                stopEngine();
+            } else {
+                startEngine();
+            }
         });
 
-        widgetCycle.addEventListener('click', () => {
-            const currentIndex = modeOrder.indexOf(currentMode);
-            const nextMode = modeOrder[(currentIndex + 1) % modeOrder.length];
-            switchMode(nextMode);
+        document.getElementById('widget-cycle').addEventListener('click', () => {
+            const order = ['clock', 'pomodoro', 'timer', 'stopwatch'];
+            const index = order.indexOf(currentMode);
+            switchMode(order[(index + 1) % order.length]);
         });
 
-        widgetBody.addEventListener('click', (e) => {
-            if (e.target.closest('button')) return;
-            if (widgetDrag.active) return;
-            if (isRunning) stopEngine();
-            else startEngine();
+        document.getElementById('widget-close').addEventListener('click', () => {
+            document.getElementById('floating-widget').classList.add('hidden');
         });
 
-        widgetClose.addEventListener('click', () => floatingWidget.classList.add('hidden'));
-        window.addEventListener('blur', () => floatingWidget.classList.remove('hidden'));
-
-        widgetDragHandle.addEventListener('pointerdown', (event) => {
-            if (event.target.closest('button')) return;
-            widgetDrag.active = true;
-            floatingWidget.classList.add('dragging');
-            const rect = floatingWidget.getBoundingClientRect();
-            widgetDrag.offsetX = event.clientX - rect.left;
-            widgetDrag.offsetY = event.clientY - rect.top;
-            widgetDragHandle.setPointerCapture(event.pointerId);
+        document.getElementById('widget-body').addEventListener('click', () => {
+            if (document.getElementById('floating-widget').classList.contains('hidden')) {
+                document.getElementById('floating-widget').classList.remove('hidden');
+            }
         });
 
-        widgetDragHandle.addEventListener('pointermove', (event) => {
-            if (!widgetDrag.active) return;
-            const x = Math.min(window.innerWidth - floatingWidget.offsetWidth - 8, Math.max(8, event.clientX - widgetDrag.offsetX));
-            const y = Math.min(window.innerHeight - floatingWidget.offsetHeight - 8, Math.max(8, event.clientY - widgetDrag.offsetY));
-            floatingWidget.style.left = `${x}px`;
-            floatingWidget.style.right = 'auto';
-            floatingWidget.style.top = `${y}px`;
-            floatingWidget.style.bottom = 'auto';
+        document.querySelectorAll('.theme-dot').forEach(dot => {
+            const theme = dot.dataset.setTheme;
+            if (theme === 'dark') dot.classList.add('active');
         });
 
-        widgetDragHandle.addEventListener('pointerup', () => {
-            widgetDrag.active = false;
-            floatingWidget.classList.remove('dragging');
-        });
-
-        widgetDragHandle.addEventListener('pointerleave', () => {
-            widgetDrag.active = false;
-            floatingWidget.classList.remove('dragging');
-        });
-
-        tick();
         updateFloatingWidget();
-        if (!loopInterval) loopInterval = setInterval(tick, 250);
+        updatePomoUI();
+        switchMode('clock');
+        updateClockDisplay(0, 0, 0);
     </script>
 </body>
 </html>
