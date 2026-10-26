@@ -559,7 +559,6 @@
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script>
-    // CRITICAL FIX: The FlipDigit class must be defined BEFORE it is instantiated below.
     class FlipDigit {
       constructor(id) {
         this.container = document.getElementById(id);
@@ -624,7 +623,6 @@
 
     let appState = loadState();
     
-    // This used to cause a ReferenceError crash because FlipDigit wasn't hoisted
     const clockDigits = {
       h1: new FlipDigit('h1'),
       h2: new FlipDigit('h2'),
@@ -671,7 +669,7 @@
     function formatHMS(totalSeconds) {
       const h = Math.min(Math.floor(totalSeconds / 3600), 99);
       const m = Math.floor((totalSeconds % 3600) / 60);
-      const s = totalSeconds % 60;
+      const s = Math.floor(totalSeconds % 60);
       return [pad2(h), pad2(m), pad2(s)].join(':');
     }
 
@@ -707,11 +705,11 @@
         const d = new Date();
         value = formatHMS((d.getHours() % 12 || 12) * 3600 + d.getMinutes() * 60 + d.getSeconds());
       } else if (currentMode === 'stopwatch') {
-        value = formatHMS(appState.settings.stopwatchElapsed);
+        value = formatHMS(Math.floor(appState.settings.stopwatchElapsed));
       } else if (currentMode === 'timer') {
-        value = formatHMS(appState.settings.timerRemaining);
+        value = formatHMS(Math.floor(appState.settings.timerRemaining));
       } else if (currentMode === 'pomodoro') {
-        value = formatHMS(appState.settings.pomodoroRemaining);
+        value = formatHMS(Math.floor(appState.settings.pomodoroRemaining));
       }
       document.getElementById('widget-time').textContent = value;
       const toggle = document.getElementById('widget-toggle');
@@ -779,7 +777,7 @@
         appState.settings.pomodoroRemaining = appState.settings.pomodoro.work * 60;
         updatePomoUI();
         const total = appState.settings.pomodoroRemaining;
-        updateClockFace(Math.floor(total / 3600), Math.floor((total % 3600)/60), total % 60);
+        updateClockFace(Math.floor(total / 3600), Math.floor((total % 3600)/60), Math.floor(total % 60));
       }
       updateFloatingWidget();
       updateEndTimeUI();
@@ -862,10 +860,12 @@
         return;
       }
 
-      const elapsedSeconds = Math.max(1, Math.floor(elapsedMs / 1000));
+      // FIXED MATH LOGIC: We track precise decimal seconds here
+      const elapsedSeconds = elapsedMs / 1000;
+
       if (currentMode === 'stopwatch') {
         appState.settings.stopwatchElapsed += elapsedSeconds;
-        const total = appState.settings.stopwatchElapsed;
+        const total = Math.floor(appState.settings.stopwatchElapsed);
         updateClockFace(Math.floor(total / 3600), Math.floor((total % 3600) / 60), total % 60);
         updateFloatingWidget();
         return;
@@ -873,7 +873,7 @@
 
       if (currentMode === 'timer') {
         appState.settings.timerRemaining = Math.max(0, appState.settings.timerRemaining - elapsedSeconds);
-        const total = appState.settings.timerRemaining;
+        const total = Math.floor(appState.settings.timerRemaining);
         updateClockFace(Math.floor(total / 3600), Math.floor((total % 3600) / 60), total % 60);
         updateFloatingWidget();
         if (total <= 0) {
@@ -887,7 +887,7 @@
 
       if (currentMode === 'pomodoro') {
         appState.settings.pomodoroRemaining = Math.max(0, appState.settings.pomodoroRemaining - elapsedSeconds);
-        const total = appState.settings.pomodoroRemaining;
+        const total = Math.floor(appState.settings.pomodoroRemaining);
         updateClockFace(Math.floor(total / 3600), Math.floor((total % 3600) / 60), total % 60);
         updateFloatingWidget();
         if (total <= 0) {
@@ -1048,12 +1048,9 @@
       showToast('Guest mode');
     }
 
-    // --- Event Listeners ---
-
     document.getElementById('btn-login-save').addEventListener('click', saveLogin);
     document.getElementById('btn-login-cancel').addEventListener('click', cancelLogin);
     
-    // Add enter key support for login fields
     ['inp-user-name', 'inp-user-email'].forEach(id => {
       document.getElementById(id).addEventListener('keypress', (e) => {
         if (e.key === 'Enter') saveLogin();
@@ -1192,7 +1189,6 @@
       updateFloatingWidget();
       setStatsView('daily');
       
-      // Fixed: Ask for login unless skipped or already logged in
       if (!appState.user.name && !appState.user.email && !appState.settings.loginSkipped) {
         openLogin();
       }
