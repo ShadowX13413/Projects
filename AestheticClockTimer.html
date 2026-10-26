@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Aesthetic Clock Timer</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Fixed: Explicitly load the UMD build for Chart.js so it attaches to the window object -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -529,7 +528,6 @@
           <input type="range" id="inp-clock-scale" min="0.5" max="1.8" step="0.05" value="1" class="w-full accent-white">
         </div>
       </div>
-      <!-- Fixed: Typo in class name (Fflex -> flex) -->
       <div class="mt-8 flex justify-center">
         <button id="btn-global-close" class="btn px-8 py-2 w-full rounded-lg font-medium text-sm tracking-widest uppercase" style="background: var(--accent); color: var(--bg);">Done</button>
       </div>
@@ -561,6 +559,50 @@
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script>
+    // CRITICAL FIX: The FlipDigit class must be defined BEFORE it is instantiated below.
+    class FlipDigit {
+      constructor(id) {
+        this.container = document.getElementById(id);
+        this.container.classList.add('flip-card');
+        this.current = '0';
+        this.topHalf = this.makeHalf('top-half', '0');
+        this.bottomHalf = this.makeHalf('bottom-half', '0');
+        this.container.appendChild(this.topHalf);
+        this.container.appendChild(this.bottomHalf);
+      }
+      makeHalf(type, value) {
+        const half = document.createElement('div');
+        half.className = `half ${type}`;
+        const text = document.createElement('div');
+        text.className = 'text';
+        text.textContent = value;
+        half.appendChild(text);
+        return half;
+      }
+      update(nextValue) {
+        if (nextValue === this.current) return;
+        const oldValue = this.current;
+        this.current = nextValue;
+
+        const topFlip = this.makeHalf('top-half flipper', oldValue);
+        const bottomFlip = this.makeHalf('bottom-half flipper', nextValue);
+        this.container.appendChild(topFlip);
+        this.container.appendChild(bottomFlip);
+
+        this.topHalf.querySelector('.text').textContent = nextValue;
+        requestAnimationFrame(() => {
+          topFlip.classList.add('flip-down');
+          bottomFlip.classList.add('flip-down');
+        });
+
+        setTimeout(() => {
+          this.bottomHalf.querySelector('.text').textContent = nextValue;
+          this.container.removeChild(topFlip);
+          this.container.removeChild(bottomFlip);
+        }, 360);
+      }
+    }
+
     const STORAGE_KEY = 'aesthetic-clock-timer';
     const defaultState = {
       user: { name: '', email: '' },
@@ -575,11 +617,14 @@
         pomodoroInterval: 1,
         pomodoroRemaining: 25 * 60,
         timerRemaining: 10 * 60,
-        stopwatchElapsed: 0
+        stopwatchElapsed: 0,
+        loginSkipped: false
       }
     };
 
     let appState = loadState();
+    
+    // This used to cause a ReferenceError crash because FlipDigit wasn't hoisted
     const clockDigits = {
       h1: new FlipDigit('h1'),
       h2: new FlipDigit('h2'),
@@ -620,12 +665,10 @@
     }
 
     function pad2(v) {
-      // Fixed: ensures exactly 2 characters from the end even if numbers overflow expected bounds
       return String(v).padStart(2, '0').slice(-2);
     }
 
     function formatHMS(totalSeconds) {
-      // Fixed: Prevent hours from exceeding 99 and breaking string layout
       const h = Math.min(Math.floor(totalSeconds / 3600), 99);
       const m = Math.floor((totalSeconds % 3600) / 60);
       const s = totalSeconds % 60;
@@ -633,7 +676,6 @@
     }
 
     function updateClockFace(hours, minutes, seconds) {
-      // Fixed: Safely clamp to 99 so arrays don't go out of bounds
       const hStr = pad2(Math.min(hours, 99));
       const digits = [
         hStr.charAt(0),
@@ -705,11 +747,7 @@
 
     function saveSession(mode, seconds) {
       if (!seconds || seconds < 1) return;
-      const entry = {
-        mode,
-        seconds,
-        timestamp: Date.now()
-      };
+      const entry = { mode, seconds, timestamp: Date.now() };
       appState.stats[mode].push(entry);
       saveState();
       renderStatsChart();
@@ -866,7 +904,6 @@
       appState.settings.currentMode = mode;
       saveState();
       
-      // Fixed: Restore the floating widget if it was closed, so the user doesn't permanently lose it
       document.getElementById('floating-widget').classList.remove('hidden');
 
       document.querySelectorAll('.nav-link').forEach(link => {
@@ -911,9 +948,7 @@
 
     function renderStatsChart() {
       const canvas = document.getElementById('statsChart');
-      if (!canvas) return;
-      // Safety check in case Chart is still unavailable
-      if (typeof Chart === 'undefined') return; 
+      if (!canvas || typeof Chart === 'undefined') return; 
 
       const ctx = canvas.getContext('2d');
       if (statsChart) statsChart.destroy();
@@ -995,6 +1030,7 @@
       document.getElementById('inp-user-name').value = appState.user.name || '';
       document.getElementById('inp-user-email').value = appState.user.email || '';
       modal.classList.remove('hidden');
+      document.getElementById('inp-user-name').focus();
     }
 
     function saveLogin() {
@@ -1005,51 +1041,25 @@
       showToast(appState.user.name ? `Welcome, ${appState.user.name}` : 'Guest mode');
     }
 
-    class FlipDigit {
-      constructor(id) {
-        this.container = document.getElementById(id);
-        this.container.classList.add('flip-card');
-        this.current = '0';
-        this.topHalf = this.makeHalf('top-half', '0');
-        this.bottomHalf = this.makeHalf('bottom-half', '0');
-        this.container.appendChild(this.topHalf);
-        this.container.appendChild(this.bottomHalf);
-      }
-      makeHalf(type, value) {
-        const half = document.createElement('div');
-        half.className = `half ${type}`;
-        const text = document.createElement('div');
-        text.className = 'text';
-        text.textContent = value;
-        half.appendChild(text);
-        return half;
-      }
-      update(nextValue) {
-        if (nextValue === this.current) return;
-        const oldValue = this.current;
-        this.current = nextValue;
-
-        const topFlip = this.makeHalf('top-half flipper', oldValue);
-        const bottomFlip = this.makeHalf('bottom-half flipper', nextValue);
-        this.container.appendChild(topFlip);
-        this.container.appendChild(bottomFlip);
-
-        this.topHalf.querySelector('.text').textContent = nextValue;
-        requestAnimationFrame(() => {
-          topFlip.classList.add('flip-down');
-          bottomFlip.classList.add('flip-down');
-        });
-
-        setTimeout(() => {
-          this.bottomHalf.querySelector('.text').textContent = nextValue;
-          this.container.removeChild(topFlip);
-          this.container.removeChild(bottomFlip);
-        }, 360);
-      }
+    function cancelLogin() {
+      appState.settings.loginSkipped = true;
+      saveState();
+      document.getElementById('modal-login').classList.add('hidden');
+      showToast('Guest mode');
     }
 
+    // --- Event Listeners ---
+
     document.getElementById('btn-login-save').addEventListener('click', saveLogin);
-    document.getElementById('btn-login-cancel').addEventListener('click', () => document.getElementById('modal-login').classList.add('hidden'));
+    document.getElementById('btn-login-cancel').addEventListener('click', cancelLogin);
+    
+    // Add enter key support for login fields
+    ['inp-user-name', 'inp-user-email'].forEach(id => {
+      document.getElementById(id).addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') saveLogin();
+      });
+    });
+
     document.getElementById('nav-stats').addEventListener('click', () => {
       document.getElementById('modal-stats').classList.remove('hidden');
       renderStatsChart();
@@ -1081,20 +1091,18 @@
 
     document.getElementById('widget-close').addEventListener('click', () => document.getElementById('floating-widget').classList.add('hidden'));
     
-    // Fixed: Implement Missing Widget Draggable Functionality
     const widget = document.getElementById('floating-widget');
     const dragHandle = document.getElementById('widget-drag-handle');
     let isDragging = false, startX, startY, initialX, initialY;
 
     dragHandle.addEventListener('mousedown', (e) => {
-      if (e.target.id === 'widget-close') return; // Don't drag if closing
+      if (e.target.id === 'widget-close') return; 
       isDragging = true;
       startX = e.clientX;
       startY = e.clientY;
       const rect = widget.getBoundingClientRect();
       initialX = rect.left;
       initialY = rect.top;
-      // Lock dimensions to current viewport left/top immediately
       widget.style.right = 'auto';
       widget.style.left = initialX + 'px';
       widget.style.top = initialY + 'px';
@@ -1183,14 +1191,16 @@
       renderClockFromDate(new Date());
       updateFloatingWidget();
       setStatsView('daily');
-      if (!appState.user.name && !appState.user.email) {
+      
+      // Fixed: Ask for login unless skipped or already logged in
+      if (!appState.user.name && !appState.user.email && !appState.settings.loginSkipped) {
         openLogin();
       }
+      
       switchMode(currentMode);
       startLoop();
     }
 
-    // Wait until document and Chart script are fully loaded before rendering charts
     window.addEventListener('DOMContentLoaded', bootstrap);
   </script>
 </body>
